@@ -11,7 +11,7 @@ by carefully reading the sequence of function calls net/http happened to use as
 of this writing and finding enough surface area with which to add appropriate
 behavior. There's a very good chance that this package will cease to work in
 future versions of Go, but with any luck the standard library will add support
-of its own by then.
+of its own by then (https://code.google.com/p/go/issues/detail?id=4674).
 
 If you're interested in figuring out how this package works, we suggest you read
 the documentation for WrapConn() and net.go.
