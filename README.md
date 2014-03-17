@@ -46,3 +46,22 @@ Features
 [bind]: http://godoc.org/github.com/zenazn/goji/bind
 [graceful]: http://godoc.org/github.com/zenazn/goji/graceful
 [param]: http://godoc.org/github.com/zenazn/goji/param
+
+
+Todo
+----
+
+Goji probably deserves a bit more love before anyone actually tries to use it.
+Things that need doing include:
+
+* Support for omitting trailing slashes on routes which include them.
+* Tests for `goji/web`. There are currently no tests. This probably means
+  `goji/web` is made of bugs. I'm sorry.
+* Standard middleware implementations. I'm currently thinking:
+  * Request ID assigner: injects a request ID into the environment.
+  * Request logger: logs requests as they come in. Preferrably with request IDs
+    and maybe even with colors.
+  * Request timer: maybe part of the request logger. Time how long each request
+    takes and print it. Maybe with color.
+  * Error handler: recovers from panics, does something nice with the output.
+  * Healthcheck endpoint: Always returns OK.
