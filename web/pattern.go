@@ -19,13 +19,13 @@ type regexpPattern struct {
 func (p regexpPattern) Prefix() string {
 	return p.prefix
 }
-func (p regexpPattern) Match(r *http.Request, c *C) bool {
+func (p regexpPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 	matches := p.re.FindStringSubmatch(r.URL.Path)
 	if matches == nil || len(matches) == 0 {
 		return false
 	}
 
-	if len(matches) == 1 {
+	if c == nil || dryrun || len(matches) == 1 {
 		return true
 	}
 
@@ -149,7 +149,7 @@ func (s stringPattern) Prefix() string {
 	return s.literals[0]
 }
 
-func (s stringPattern) Match(r *http.Request, c *C) bool {
+func (s stringPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 	path := r.URL.Path
 	matches := make([]string, len(s.pats))
 	for i := 0; i < len(s.pats); i++ {
@@ -179,6 +179,10 @@ func (s stringPattern) Match(r *http.Request, c *C) bool {
 		if path != s.literals[len(s.pats)] {
 			return false
 		}
+	}
+
+	if c == nil || dryrun {
+		return true
 	}
 
 	if c.UrlParams == nil && len(matches) > 0 {

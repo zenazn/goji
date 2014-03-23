@@ -28,6 +28,8 @@ const (
 		mPOST | mPUT | mTRACE | mIDK
 )
 
+const validMethods = "goji.web.validMethods"
+
 type route struct {
 	// Theory: most real world routes have a string prefix which is both
 	// cheap(-ish) to test against and pretty selective. And, conveniently,
@@ -61,8 +63,9 @@ type Pattern interface {
 	// Returns true if the request satisfies the pattern. This function is
 	// free to examine both the request and the context to make this
 	// decision. After it is certain that the request matches, this function
-	// should mutate or create c.UrlParams if necessary.
-	Match(r *http.Request, c *C) bool
+	// should mutate or create c.UrlParams if necessary, unless dryrun is
+	// set.
+	Match(r *http.Request, c *C, dryrun bool) bool
 }
 
 func parsePattern(p interface{}, isPrefix bool) Pattern {
@@ -139,16 +142,64 @@ func httpMethod(mname string) method {
 
 func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 	m := httpMethod(r.Method)
+	var methods method
 	for _, route := range rt.routes {
-		if route.method&m == 0 ||
-			!strings.HasPrefix(r.URL.Path, route.prefix) ||
-			!route.pattern.Match(r, &c) {
+		if !strings.HasPrefix(r.URL.Path, route.prefix) ||
+			!route.pattern.Match(r, &c, false) {
+
 			continue
 		}
-		route.handler.ServeHTTPC(c, w, r)
+
+		if route.method&m != 0 {
+			route.handler.ServeHTTPC(c, w, r)
+			return
+		} else if route.pattern.Match(r, &c, true) {
+			methods |= route.method
+		}
+	}
+
+	if methods == 0 {
+		rt.notFound.ServeHTTPC(c, w, r)
 		return
 	}
 
+	// Oh god kill me now
+	var methodsList = make([]string, 0)
+	if methods&mCONNECT != 0 {
+		methodsList = append(methodsList, "CONNECT")
+	}
+	if methods&mDELETE != 0 {
+		methodsList = append(methodsList, "DELETE")
+	}
+	if methods&mGET != 0 {
+		methodsList = append(methodsList, "GET")
+	}
+	if methods&mHEAD != 0 {
+		methodsList = append(methodsList, "HEAD")
+	}
+	if methods&mOPTIONS != 0 {
+		methodsList = append(methodsList, "OPTIONS")
+	}
+	if methods&mPATCH != 0 {
+		methodsList = append(methodsList, "PATCH")
+	}
+	if methods&mPOST != 0 {
+		methodsList = append(methodsList, "POST")
+	}
+	if methods&mPUT != 0 {
+		methodsList = append(methodsList, "PUT")
+	}
+	if methods&mTRACE != 0 {
+		methodsList = append(methodsList, "TRACE")
+	}
+
+	if c.Env == nil {
+		c.Env = map[string]interface{}{
+			validMethods: methodsList,
+		}
+	} else {
+		c.Env[validMethods] = methodsList
+	}
 	rt.notFound.ServeHTTPC(c, w, r)
 }
 
@@ -270,6 +321,10 @@ func (m *router) Sub(pattern string, handler interface{}) {
 
 // Set the fallback (i.e., 404) handler for this mux. See the documentation for
 // type Mux for a description of what types are accepted for handler.
+//
+// As a convenience, the environment variable "goji.web.validMethods" will be
+// set to the list of HTTP methods that could have been routed had they been
+// provided on an otherwise identical request
 func (m *router) NotFound(handler interface{}) {
 	m.notFound = parseHandler(handler)
 }

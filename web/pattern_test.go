@@ -149,7 +149,7 @@ func TestPatterns(t *testing.T) {
 }
 
 func runTest(t *testing.T, p Pattern, test patternTest) {
-	result := p.Match(test.r, test.c)
+	result := p.Match(test.r, test.c, false)
 	if result != test.match {
 		t.Errorf("Expected match(%v, %#v) to return %v", p,
 			test.r.URL.Path, test.match)

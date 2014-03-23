@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -63,9 +64,11 @@ func (t testPattern) Prefix() string {
 	return ""
 }
 
-func (t testPattern) Match(r *http.Request, c *C) bool {
+func (t testPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 	return true
 }
+
+var _ Pattern = testPattern{}
 
 func TestPatternTypes(t *testing.T) {
 	t.Parallel()
@@ -171,5 +174,52 @@ func TestSub(t *testing.T) {
 		}
 	case <-time.After(5 * time.Millisecond):
 		t.Errorf("Timeout waiting for hello")
+	}
+}
+
+var validMethodsTable = map[string][]string{
+	"/hello/carl":       {"DELETE", "GET", "PATCH", "POST", "PUT"},
+	"/hello/bob":        {"DELETE", "GET", "HEAD", "PATCH", "PUT"},
+	"/hola/carl":        {"DELETE", "GET", "PUT"},
+	"/hola/bob":         {"DELETE"},
+	"/does/not/compute": {},
+}
+
+func TestValidMethods(t *testing.T) {
+	t.Parallel()
+	rt := makeRouter()
+	ch := make(chan []string, 1)
+
+	rt.NotFound(func(c C, w http.ResponseWriter, r *http.Request) {
+		if c.Env == nil {
+			ch <- []string{}
+			return
+		}
+		methods, ok := c.Env[validMethods]
+		if !ok {
+			ch <- []string{}
+			return
+		}
+		ch <- methods.([]string)
+	})
+
+	rt.Get("/hello/carl", http.NotFound)
+	rt.Post("/hello/carl", http.NotFound)
+	rt.Head("/hello/bob", http.NotFound)
+	rt.Get("/hello/:name", http.NotFound)
+	rt.Put("/hello/:name", http.NotFound)
+	rt.Patch("/hello/:name", http.NotFound)
+	rt.Get("/:greet/carl", http.NotFound)
+	rt.Put("/:greet/carl", http.NotFound)
+	rt.Delete("/:greet/:anyone", http.NotFound)
+
+	for path, eMethods := range validMethodsTable {
+		r, _ := http.NewRequest("BOGUS", path, nil)
+		rt.route(C{}, httptest.NewRecorder(), r)
+		aMethods := <-ch
+		if !reflect.DeepEqual(eMethods, aMethods) {
+			t.Errorf("For %q, expected %v, got %v", path, eMethods,
+				aMethods)
+		}
 	}
 }
