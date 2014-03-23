@@ -36,6 +36,7 @@ func AutomaticOptions(c *web.C, h http.Handler) http.Handler {
 		methods := getValidMethods(*c)
 
 		if fw.Code == http.StatusNotFound && methods != nil {
+			methods = addMethod(methods, "OPTIONS")
 			w.Header().Set("Allow", strings.Join(methods, ", "))
 			w.WriteHeader(http.StatusOK)
 		} else {
@@ -60,4 +61,15 @@ func getValidMethods(c web.C) []string {
 	} else {
 		return nil
 	}
+}
+
+// Assumption: the list of methods is teensy, and that anything we could
+// possibly want to do here is going to be fast.
+func addMethod(methods []string, method string) []string {
+	for _, m := range methods {
+		if m == method {
+			return methods
+		}
+	}
+	return append(methods, method)
 }
