@@ -59,7 +59,7 @@ func (b *basicWriter) maybeClose() {
 	b.headerWritten = true
 	select {
 	case <-kill:
-		b.ResponseWriter.Header().Add("Connection", "close")
+		b.ResponseWriter.Header().Set("Connection", "close")
 	default:
 	}
 }
