@@ -194,6 +194,8 @@ func (s stringPattern) String() string {
 	return fmt.Sprintf("stringPattern(%q, %v)", s.raw, s.isPrefix)
 }
 
+var patternRe = regexp.MustCompile(`/:([^/]+)`)
+
 func parseStringPattern(s string, isPrefix bool) stringPattern {
 	matches := patternRe.FindAllStringSubmatchIndex(s, -1)
 	pats := make([]string, len(matches))

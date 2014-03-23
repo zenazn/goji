@@ -65,8 +65,6 @@ type Pattern interface {
 	Match(r *http.Request, c *C) bool
 }
 
-var patternRe = regexp.MustCompile(`/:([^/]+)`)
-
 func parsePattern(p interface{}, isPrefix bool) Pattern {
 	switch p.(type) {
 	case Pattern:
