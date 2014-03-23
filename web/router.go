@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -29,6 +30,18 @@ const (
 )
 
 const validMethods = "goji.web.validMethods"
+
+var validMethodsMap = map[string]method{
+	"CONNECT": mCONNECT,
+	"DELETE":  mDELETE,
+	"GET":     mGET,
+	"HEAD":    mHEAD,
+	"OPTIONS": mOPTIONS,
+	"PATCH":   mPATCH,
+	"POST":    mPOST,
+	"PUT":     mPUT,
+	"TRACE":   mTRACE,
+}
 
 type route struct {
 	// Theory: most real world routes have a string prefix which is both
@@ -116,28 +129,10 @@ func parseHandler(h interface{}) Handler {
 }
 
 func httpMethod(mname string) method {
-	switch strings.ToUpper(mname) {
-	case "CONNECT":
-		return mCONNECT
-	case "DELETE":
-		return mDELETE
-	case "GET":
-		return mGET
-	case "HEAD":
-		return mHEAD
-	case "OPTIONS":
-		return mOPTIONS
-	case "PATCH":
-		return mPATCH
-	case "POST":
-		return mPOST
-	case "PUT":
-		return mPUT
-	case "TRACE":
-		return mTRACE
-	default:
-		return mIDK
+	if method, ok := validMethodsMap[strings.ToUpper(mname)]; ok {
+		return method
 	}
+	return mIDK
 }
 
 func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
@@ -163,35 +158,13 @@ func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Oh god kill me now
 	var methodsList = make([]string, 0)
-	if methods&mCONNECT != 0 {
-		methodsList = append(methodsList, "CONNECT")
+	for mname, meth := range validMethodsMap {
+		if methods&meth != 0 {
+			methodsList = append(methodsList, mname)
+		}
 	}
-	if methods&mDELETE != 0 {
-		methodsList = append(methodsList, "DELETE")
-	}
-	if methods&mGET != 0 {
-		methodsList = append(methodsList, "GET")
-	}
-	if methods&mHEAD != 0 {
-		methodsList = append(methodsList, "HEAD")
-	}
-	if methods&mOPTIONS != 0 {
-		methodsList = append(methodsList, "OPTIONS")
-	}
-	if methods&mPATCH != 0 {
-		methodsList = append(methodsList, "PATCH")
-	}
-	if methods&mPOST != 0 {
-		methodsList = append(methodsList, "POST")
-	}
-	if methods&mPUT != 0 {
-		methodsList = append(methodsList, "PUT")
-	}
-	if methods&mTRACE != 0 {
-		methodsList = append(methodsList, "TRACE")
-	}
+	sort.Strings(methodsList)
 
 	if c.Env == nil {
 		c.Env = map[string]interface{}{
