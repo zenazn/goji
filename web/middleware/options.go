@@ -18,7 +18,7 @@ func AutomaticOptions(c *web.C, h http.Handler) http.Handler {
 		// 404 route anyways.
 		var fw *httptest.ResponseRecorder
 		pw := w
-		if strings.ToUpper(r.Method) == "OPTIONS" {
+		if r.Method == "OPTIONS" {
 			fw = httptest.NewRecorder()
 			pw = fw
 		}

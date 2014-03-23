@@ -129,7 +129,7 @@ func parseHandler(h interface{}) Handler {
 }
 
 func httpMethod(mname string) method {
-	if method, ok := validMethodsMap[strings.ToUpper(mname)]; ok {
+	if method, ok := validMethodsMap[mname]; ok {
 		return method
 	}
 	return mIDK
