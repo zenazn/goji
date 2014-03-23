@@ -223,8 +223,13 @@ func (m *router) Delete(pattern interface{}, handler interface{}) {
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // GET. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
+//
+// All GET handlers also transparently serve HEAD requests, since net/http will
+// take care of all the fiddly bits for you. If you wish to provide an alternate
+// implementation of HEAD, you should add a handler explicitly and place it
+// above your GET handler.
 func (m *router) Get(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mGET, handler)
+	m.handleUntyped(pattern, mGET|mHEAD, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
