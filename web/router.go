@@ -113,7 +113,7 @@ func parseHandler(h interface{}) Handler {
 }
 
 func httpMethod(mname string) method {
-	switch mname {
+	switch strings.ToUpper(mname) {
 	case "CONNECT":
 		return mCONNECT
 	case "DELETE":
