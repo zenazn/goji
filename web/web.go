@@ -30,11 +30,11 @@ Use your favorite HTTP verbs:
 
 Bind parameters using either Sinatra-like patterns or regular expressions:
 
-	m.Get("/hello/:name", func(c *web.C, w http.ResponseWriter, r *http.Request) {
+	m.Get("/hello/:name", func(c web.C, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %s!", c.UrlParams["name"])
 	})
 	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
-	m.Get(pattern, func(c *web.C, w http.ResponseWriter, r *http.Request) {
+	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
 		fmt.Printf(w, "Info for IP address %s:", c.UrlParams["ip"])
 	})
 
