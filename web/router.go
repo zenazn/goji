@@ -29,7 +29,9 @@ const (
 		mPOST | mPUT | mTRACE | mIDK
 )
 
-const validMethods = "goji.web.validMethods"
+// The key used to communicate to the NotFound handler what methods would have
+// been allowed if they'd been provided.
+const ValidMethodsKey = "goji.web.validMethods"
 
 var validMethodsMap = map[string]method{
 	"CONNECT": mCONNECT,
@@ -168,10 +170,10 @@ func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 
 	if c.Env == nil {
 		c.Env = map[string]interface{}{
-			validMethods: methodsList,
+			ValidMethodsKey: methodsList,
 		}
 	} else {
-		c.Env[validMethods] = methodsList
+		c.Env[ValidMethodsKey] = methodsList
 	}
 	rt.notFound.ServeHTTPC(c, w, r)
 }
@@ -300,9 +302,10 @@ func (m *router) Sub(pattern string, handler interface{}) {
 // Set the fallback (i.e., 404) handler for this mux. See the documentation for
 // type Mux for a description of what types are accepted for handler.
 //
-// As a convenience, the environment variable "goji.web.validMethods" will be
-// set to the list of HTTP methods that could have been routed had they been
-// provided on an otherwise identical request
+// As a convenience, the context environment variable "goji.web.validMethods"
+// (also available as the constant ValidMethodsKey) will be set to the list of
+// HTTP methods that could have been routed had they been provided on an
+// otherwise identical request.
 func (m *router) NotFound(handler interface{}) {
 	m.notFound = parseHandler(handler)
 }

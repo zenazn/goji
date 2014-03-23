@@ -52,7 +52,7 @@ func getValidMethods(c web.C) []string {
 	if c.Env == nil {
 		return nil
 	}
-	v, ok := c.Env["goji.web.validMethods"]
+	v, ok := c.Env[web.ValidMethodsKey]
 	if !ok {
 		return nil
 	}
