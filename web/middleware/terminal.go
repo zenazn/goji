@@ -3,8 +3,7 @@ package middleware
 import (
 	"bytes"
 	"fmt"
-
-	"code.google.com/p/go.crypto/ssh/terminal"
+	"os"
 )
 
 var (
@@ -30,7 +29,24 @@ var (
 	reset = []byte{'\033', '[', '0', 'm'}
 )
 
-var isTTY = terminal.IsTerminal(1)
+var isTTY bool
+
+func init() {
+	// This is sort of cheating: if stdout is a character device, we assume
+	// that means it's a TTY. Unfortunately, there are many non-TTY
+	// character devices, but fortunately stdout is rarely set to any of
+	// them.
+	//
+	// We could solve this properly by pulling in a dependency on
+	// code.google.com/p/go.crypto/ssh/terminal, for instance, but as a
+	// heuristic for whether to print in color or in black-and-white, I'd
+	// really rather not.
+	fi, err := os.Stdout.Stat()
+	if err == nil {
+		m := os.ModeDevice | os.ModeCharDevice
+		isTTY = fi.Mode()&m == m
+	}
+}
 
 // colorWrite
 func cW(buf *bytes.Buffer, color []byte, s string, args ...interface{}) {
