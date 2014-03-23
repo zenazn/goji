@@ -78,16 +78,3 @@ func printEnd(reqId string, w writerProxy, dt time.Duration) {
 
 	log.Print(buf.String())
 }
-
-func wrapWriter(w http.ResponseWriter) writerProxy {
-	_, cn := w.(http.CloseNotifier)
-	_, fl := w.(http.Flusher)
-	_, hj := w.(http.Hijacker)
-
-	bw := basicWriter{ResponseWriter: w}
-	if cn && fl && hj {
-		return &fancyWriter{bw}
-	} else {
-		return &bw
-	}
-}

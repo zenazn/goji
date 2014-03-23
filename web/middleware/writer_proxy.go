@@ -2,9 +2,24 @@ package middleware
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"net/http"
 )
+
+func wrapWriter(w http.ResponseWriter) writerProxy {
+	_, cn := w.(http.CloseNotifier)
+	_, fl := w.(http.Flusher)
+	_, hj := w.(http.Hijacker)
+	_, rf := w.(io.ReaderFrom)
+
+	bw := basicWriter{ResponseWriter: w}
+	if cn && fl && hj && rf {
+		return &fancyWriter{bw}
+	} else {
+		return &bw
+	}
+}
 
 type writerProxy interface {
 	http.ResponseWriter
@@ -55,7 +70,13 @@ func (f *fancyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hj := f.basicWriter.ResponseWriter.(http.Hijacker)
 	return hj.Hijack()
 }
+func (f *fancyWriter) ReadFrom(r io.Reader) (int64, error) {
+	rf := f.basicWriter.ResponseWriter.(io.ReaderFrom)
+	f.basicWriter.maybeWriteHeader()
+	return rf.ReadFrom(r)
+}
 
 var _ http.CloseNotifier = &fancyWriter{}
 var _ http.Flusher = &fancyWriter{}
 var _ http.Hijacker = &fancyWriter{}
+var _ io.ReaderFrom = &fancyWriter{}

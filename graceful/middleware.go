@@ -2,6 +2,7 @@ package graceful
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"net/http"
 )
@@ -36,10 +37,11 @@ func Middleware(h http.Handler) http.Handler {
 		_, cn := w.(http.CloseNotifier)
 		_, fl := w.(http.Flusher)
 		_, hj := w.(http.Hijacker)
+		_, rf := w.(io.ReaderFrom)
 
 		bw := basicWriter{ResponseWriter: w}
 
-		if cn && fl && hj {
+		if cn && fl && hj && rf {
 			h.ServeHTTP(&fancyWriter{bw}, r)
 		} else {
 			h.ServeHTTP(&bw, r)
@@ -104,3 +106,15 @@ func (f *fancyWriter) Hijack() (c net.Conn, b *bufio.ReadWriter, e error) {
 
 	return
 }
+func (f *fancyWriter) ReadFrom(r io.Reader) (int64, error) {
+	rf := f.basicWriter.ResponseWriter.(io.ReaderFrom)
+	if !f.basicWriter.headerWritten {
+		f.basicWriter.maybeClose()
+	}
+	return rf.ReadFrom(r)
+}
+
+var _ http.CloseNotifier = &fancyWriter{}
+var _ http.Flusher = &fancyWriter{}
+var _ http.Hijacker = &fancyWriter{}
+var _ io.ReaderFrom = &fancyWriter{}
