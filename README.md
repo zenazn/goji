@@ -29,6 +29,10 @@ func main() {
 }
 ```
 
+Goji also includes a [sample application][sample] in the `example` folder which
+was artificially constructed to show off all of Goji's features. Check it out!
+
+[sample]: https://github.com/zenazn/goji/tree/master/example
 
 Features
 --------
