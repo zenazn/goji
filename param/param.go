@@ -1,5 +1,5 @@
 /*
-Package param deserializes parameter values into the given struct using magical
+Package param deserializes parameter values into a given struct using magical
 reflection ponies. Inspired by gorilla/schema, but uses Rails/jQuery style param
 encoding instead of their weird dotted syntax. In particular, this package was
 written with the intent of parsing the output of jQuery.param.
