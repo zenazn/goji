@@ -49,7 +49,7 @@ func New() *Mux {
 	mux := Mux{
 		mStack: mStack{
 			stack: make([]mLayer, 0),
-			pool:  make(chan *cStack),
+			pool:  make(chan *cStack, mPoolSize),
 		},
 		router: router{
 			routes:   make([]route, 0),

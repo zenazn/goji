@@ -28,7 +28,8 @@ type mStack struct {
 // fully assembled middleware stacks (the "c" stands for "cached").
 type cStack struct {
 	C
-	m http.Handler
+	m    http.Handler
+	pool chan *cStack
 }
 
 func (s *cStack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +73,7 @@ func (m *mStack) invalidate() {
 	old := m.pool
 	m.pool = make(chan *cStack, mPoolSize)
 	close(old)
+	// Bleed down the old pool so it gets GC'd
 	for _ = range old {
 	}
 }
@@ -94,26 +96,41 @@ func (m *mStack) newStack() *cStack {
 }
 
 func (m *mStack) alloc() *cStack {
+	// This is a little sloppy: this is only safe if this pointer
+	// dereference is atomic. Maybe someday I'll replace it with
+	// sync/atomic, but for now I happen to know that on all the
+	// architecures I care about it happens to be atomic.
+	p := m.pool
+	var cs *cStack
 	select {
-	case cs := <-m.pool:
+	case cs = <-p:
+		// This can happen if we race against an invalidation. It's
+		// completely peaceful, so long as we assume we can grab a cStack before
+		// our stack blows out.
 		if cs == nil {
 			return m.alloc()
 		}
-		return cs
 	default:
-		return m.newStack()
+		cs = m.newStack()
 	}
+
+	cs.pool = p
+	return cs
 }
 
 func (m *mStack) release(cs *cStack) {
-	// It's possible that the pool has been invalidated and therefore
-	// closed, in which case we'll start panicing, which is dumb. I'm not
-	// sure this is actually better than just grabbing a lock, but whatever.
+	if cs.pool != m.pool {
+		return
+	}
+	// It's possible that the pool has been invalidated (and closed) between
+	// the check above and now, in which case we'll start panicing, which is
+	// dumb. I'm not sure this is actually better than just grabbing a lock,
+	// but whatever.
 	defer func() {
 		recover()
 	}()
 	select {
-	case m.pool <- cs:
+	case cs.pool <- cs:
 	default:
 	}
 }
