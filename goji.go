@@ -48,6 +48,8 @@ func Serve() {
 		flag.Parse()
 	}
 
+	log.SetFlags(log.Flags() | log.Lmicroseconds)
+
 	// Install our handler at the root of the standard net/http default mux.
 	// This allows packages like expvar to continue working as expected.
 	http.Handle("/", DefaultMux)

@@ -2,6 +2,7 @@ package goji
 
 import (
 	"github.com/zenazn/goji/web"
+	"github.com/zenazn/goji/web/middleware"
 )
 
 // The default web.Mux.
@@ -9,6 +10,10 @@ var DefaultMux *web.Mux
 
 func init() {
 	DefaultMux = web.New()
+
+	DefaultMux.Use("RequestId", middleware.RequestId)
+	DefaultMux.Use("Logger", middleware.Logger)
+	DefaultMux.Use("Recoverer", middleware.Recoverer)
 }
 
 // Append the given middleware to the default Mux's middleware stack. See the
