@@ -47,6 +47,7 @@ Features
 * [Graceful shutdown][graceful], and zero-downtime graceful reload when combined
   with Einhorn.
 * Ruby on Rails / jQuery style [parameter parsing][param]
+* High in antioxidants
 
 [einhorn]: https://github.com/stripe/einhorn
 [bind]: http://godoc.org/github.com/zenazn/goji/bind
