@@ -125,3 +125,16 @@ net/http to perform its built-in optimizations. Perhaps uniquely in the Go web
 framework ecosystem, Goji supports net/http's transparent `sendfile(2)` support.
 
 [bench]: https://github.com/cypriss/golang-mux-benchmark/
+
+
+Contributing
+------------
+
+Please do! I love pull requests, and I love pull requests that include tests
+even more. Goji's core packages have pretty good code coverage (yay code
+coverage gamification!), and if you have the time to write tests I'd like to
+keep it that way.
+
+In addition to contributing code, I'd love to know what you think about Goji.
+Please open an issue or send me an email with your thoughts; it'd mean a lot to
+me.
