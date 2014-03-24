@@ -79,7 +79,7 @@ func NewGreet(w http.ResponseWriter, r *http.Request) {
 	var greet Greet
 
 	// Parse the POST body into the Greet struct. The format is the same as
-	// is emitted by (e.g.) jQuery.params.
+	// is emitted by (e.g.) jQuery.param.
 	r.ParseForm()
 	err := param.Parse(r.Form, &greet)
 
