@@ -42,10 +42,7 @@ func main() {
 	// Goji's interfaces are completely composable.
 	admin := web.New()
 	goji.Sub("/admin", admin)
-
-	// Insert the super-secure middleware into the stack above the built-in
-	// AutomaticOptions middleware.
-	admin.Insert("SuperSecure", SuperSecure, "AutomaticOptions")
+	admin.Use("SuperSecure", SuperSecure)
 
 	// Set up admin routes. Note that sub-routes do *not* mutate the path in
 	// any way, so we need to supply full ("/admin" prefixed) paths.
