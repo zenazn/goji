@@ -34,8 +34,8 @@ func TestMethods(t *testing.T) {
 
 	rt.Connect("/", chHandler(ch, "CONNECT"))
 	rt.Delete("/", chHandler(ch, "DELETE"))
-	rt.Get("/", chHandler(ch, "GET"))
 	rt.Head("/", chHandler(ch, "HEAD"))
+	rt.Get("/", chHandler(ch, "GET"))
 	rt.Options("/", chHandler(ch, "OPTIONS"))
 	rt.Patch("/", chHandler(ch, "PATCH"))
 	rt.Post("/", chHandler(ch, "POST"))
@@ -50,7 +50,7 @@ func TestMethods(t *testing.T) {
 		select {
 		case val := <-ch:
 			if val != method {
-				t.Error("Got %q, expected %q", val, method)
+				t.Errorf("Got %q, expected %q", val, method)
 			}
 		case <-time.After(5 * time.Millisecond):
 			t.Errorf("Timeout waiting for method %q", method)
@@ -117,7 +117,7 @@ func TestHandlerTypes(t *testing.T) {
 	rt.Get("/e", testHandler(ch))
 
 	for route, response := range testHandlerTable {
-		r, _ := http.NewRequest("gEt", route, nil)
+		r, _ := http.NewRequest("GET", route, nil)
 		w := httptest.NewRecorder()
 		rt.route(C{}, w, r)
 		select {
@@ -147,7 +147,7 @@ func TestNotFound(t *testing.T) {
 		http.Error(w, "I'm a teapot!", http.StatusTeapot)
 	})
 
-	r, _ = http.NewRequest("post", "/", nil)
+	r, _ = http.NewRequest("POST", "/", nil)
 	w = httptest.NewRecorder()
 	rt.route(C{}, w, r)
 	if w.Code != http.StatusTeapot {
@@ -178,9 +178,9 @@ func TestSub(t *testing.T) {
 }
 
 var validMethodsTable = map[string][]string{
-	"/hello/carl":       {"DELETE", "GET", "PATCH", "POST", "PUT"},
+	"/hello/carl":       {"DELETE", "GET", "HEAD", "PATCH", "POST", "PUT"},
 	"/hello/bob":        {"DELETE", "GET", "HEAD", "PATCH", "PUT"},
-	"/hola/carl":        {"DELETE", "GET", "PUT"},
+	"/hola/carl":        {"DELETE", "GET", "HEAD", "PUT"},
 	"/hola/bob":         {"DELETE"},
 	"/does/not/compute": {},
 }
@@ -195,7 +195,7 @@ func TestValidMethods(t *testing.T) {
 			ch <- []string{}
 			return
 		}
-		methods, ok := c.Env[validMethods]
+		methods, ok := c.Env[ValidMethodsKey]
 		if !ok {
 			ch <- []string{}
 			return
