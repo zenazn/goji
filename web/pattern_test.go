@@ -81,14 +81,14 @@ var patternTests = []struct {
 		}},
 
 	// String pattern tests
-	{parseStringPattern("/hello", false),
+	{parseStringPattern("/hello"),
 		"/hello", []patternTest{
 			pt("/hello", true, nil),
 			pt("/hell", false, nil),
 			pt("/hello/", false, nil),
 			pt("/hello/world", false, nil),
 		}},
-	{parseStringPattern("/hello/:name", false),
+	{parseStringPattern("/hello/:name"),
 		"/hello/", []patternTest{
 			pt("/hello/world", true, map[string]string{
 				"name": "world",
@@ -97,7 +97,7 @@ var patternTests = []struct {
 			pt("/hello/", false, nil),
 			pt("/hello/my/love", false, nil),
 		}},
-	{parseStringPattern("/a/:a/b/:b", false),
+	{parseStringPattern("/a/:a/b/:b"),
 		"/a/", []patternTest{
 			pt("/a/1/b/2", true, map[string]string{
 				"a": "1",
@@ -108,8 +108,8 @@ var patternTests = []struct {
 			pt("/a/1/b/2/3", false, nil),
 		}},
 
-	// String sub-pattern tests
-	{parseStringPattern("/user/:user", true),
+	// String prefix tests
+	{parseStringPattern("/user/:user*"),
 		"/user/", []patternTest{
 			pt("/user/bob", true, map[string]string{
 				"user": "bob",
@@ -120,12 +120,25 @@ var patternTests = []struct {
 			pt("/user/", false, nil),
 			pt("/user//", false, nil),
 		}},
-	{parseStringPattern("/user/:user/friends", true),
+	{parseStringPattern("/user/:user/*"),
+		"/user/", []patternTest{
+			pt("/user/bob/friends/123", true, map[string]string{
+				"user": "bob",
+			}),
+			pt("/user/bob", false, nil),
+			pt("/user/", false, nil),
+			pt("/user//", false, nil),
+		}},
+	{parseStringPattern("/user/:user/friends*"),
 		"/user/", []patternTest{
 			pt("/user/bob/friends", true, map[string]string{
 				"user": "bob",
 			}),
 			pt("/user/bob/friends/123", true, map[string]string{
+				"user": "bob",
+			}),
+			// This is a little unfortunate
+			pt("/user/bob/friends123", true, map[string]string{
 				"user": "bob",
 			}),
 			pt("/user/bob/enemies", false, nil),

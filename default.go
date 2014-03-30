@@ -101,12 +101,6 @@ func Trace(pattern interface{}, handler interface{}) {
 	DefaultMux.Trace(pattern, handler)
 }
 
-// Add a sub-route to the default Mux. See the documentation for web.Mux.Sub
-// for more information.
-func Sub(pattern string, handler interface{}) {
-	DefaultMux.Sub(pattern, handler)
-}
-
 // Set the NotFound handler for the default Mux. See the documentation for
 // web.Mux.NotFound for more information.
 func NotFound(handler interface{}) {

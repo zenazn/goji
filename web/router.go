@@ -83,14 +83,14 @@ type Pattern interface {
 	Match(r *http.Request, c *C, dryrun bool) bool
 }
 
-func parsePattern(p interface{}, isPrefix bool) Pattern {
+func parsePattern(p interface{}) Pattern {
 	switch p.(type) {
 	case Pattern:
 		return p.(Pattern)
 	case *regexp.Regexp:
 		return parseRegexpPattern(p.(*regexp.Regexp))
 	case string:
-		return parseStringPattern(p.(string), isPrefix)
+		return parseStringPattern(p.(string))
 	default:
 		log.Fatalf("Unknown pattern type %v. Expected a web.Pattern, "+
 			"regexp.Regexp, or a string.", p)
@@ -179,7 +179,7 @@ func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {
-	pat := parsePattern(p, false)
+	pat := parsePattern(p)
 	rt.handle(pat, m, parseHandler(h))
 }
 
@@ -201,9 +201,18 @@ func (rt *router) handle(p Pattern, m method, h Handler) {
 // functions here "m" instead of the standard "rt", since they will eventually
 // be shown on the documentation for the Mux that they are included in.
 
-// Dispatch to the given handler when the pattern matches, regardless of HTTP
-// method. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
+/*
+Dispatch to the given handler when the pattern matches, regardless of HTTP
+method. See the documentation for type Mux for a description of what types are
+accepted for pattern and handler.
+
+This method is commonly used to implement sub-routing: an admin application, for
+instance, can expose a single handler that is attached to the main Mux by
+calling Handle("/admin*", adminHandler) or similar. Note that this function
+doesn't strip this prefix from the path before forwarding it on (e.g., the
+handler will see the full path, including the "/admin" part), but this
+functionality can easily be performed by an extra middleware layer.
+*/
 func (m *router) Handle(pattern interface{}, handler interface{}) {
 	m.handleUntyped(pattern, mALL, handler)
 }
@@ -274,29 +283,6 @@ func (m *router) Put(pattern interface{}, handler interface{}) {
 // accepted for pattern and handler.
 func (m *router) Trace(pattern interface{}, handler interface{}) {
 	m.handleUntyped(pattern, mTRACE, handler)
-}
-
-/*
-Dispatch to the given handler when the given (Sinatra-like) pattern matches a
-prefix of the path. This function explicitly takes a string parameter since you
-can implement this behavior with a regular expression using the standard
-Handle() function.
-
-This function is probably most helpful when implementing sub-routing: an admin
-application, for instance, can expose a single handler, and can be hooked up all
-at once by attaching a sub-route at "/admin".
-
-Notably, this function does not strip the matched prefix from downstream
-handlers, so in the above example the handler would recieve requests with path
-"/admin/foo/bar", for example, instead of just "/foo/bar". Luckily, this is a
-problem easily surmountable by middleware.
-
-See the documentation for type Mux for a description of what types are accepted
-for handler.
-*/
-func (m *router) Sub(pattern string, handler interface{}) {
-	pat := parsePattern(pattern, true)
-	m.handle(pat, mALL, parseHandler(handler))
 }
 
 // Set the fallback (i.e., 404) handler for this mux. See the documentation for

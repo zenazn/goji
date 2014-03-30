@@ -30,11 +30,20 @@ following types:
 	- func(c *web.C, http.Handler) http.Handler
 All of the route-adding functions on Mux take two untyped parameters: pattern
 and handler. Pattern must be one of the following types:
-	- string (interpreted as a Sinatra pattern)
+	- string. It will be interpreted as a Sinatra-like pattern. In
+	  particular, the following syntax is recognized:
+		- a path segment starting with with a colon will match any
+		  string placed at that position. e.g., "/:name" will match
+		  "/carl", binding "name" to "carl".
+		- a pattern ending with an asterisk will match any prefix of
+		  that route. For instance, "/admin/*" will match "/admin/" and
+		  "/admin/secret/lair". This is similar to Sinatra's wildcard,
+		  but may only appear at the very end of the string and is
+		  therefore significantly less powerful.
 	- regexp.Regexp. The library assumes that it is a Perl-style regexp that
-	is anchored on the left (i.e., the beginning of the string). If your
-	regexp is not anchored on the left, a hopefully-identical left-anchored
-	regexp will be created and used instead.
+	  is anchored on the left (i.e., the beginning of the string). If your
+	  regexp is not anchored on the left, a hopefully-identical
+	  left-anchored regexp will be created and used instead.
 	- web.Pattern
 Handler must be one of the following types:
 	- http.Handler

@@ -200,7 +200,14 @@ func (s stringPattern) String() string {
 
 var patternRe = regexp.MustCompile(`/:([^/]+)`)
 
-func parseStringPattern(s string, isPrefix bool) stringPattern {
+func parseStringPattern(s string) stringPattern {
+	var isPrefix bool
+	// Routes that end in an asterisk ("*") are prefix routes
+	if len(s) > 0 && s[len(s)-1] == '*' {
+		s = s[:len(s)-1]
+		isPrefix = true
+	}
+
 	matches := patternRe.FindAllStringSubmatchIndex(s, -1)
 	pats := make([]string, len(matches))
 	literals := make([]string, len(matches)+1)

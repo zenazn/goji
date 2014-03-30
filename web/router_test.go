@@ -155,12 +155,12 @@ func TestNotFound(t *testing.T) {
 	}
 }
 
-func TestSub(t *testing.T) {
+func TestPrefix(t *testing.T) {
 	t.Parallel()
 	rt := makeRouter()
 	ch := make(chan string, 1)
 
-	rt.Sub("/hello", func(w http.ResponseWriter, r *http.Request) {
+	rt.Handle("/hello*", func(w http.ResponseWriter, r *http.Request) {
 		ch <- r.URL.Path
 	})
 
