@@ -18,19 +18,19 @@ func init() {
 }
 
 // Append the given middleware to the default Mux's middleware stack. See the
-// documentation for web.Mux.Use for more informatino.
+// documentation for web.Mux.Use for more information.
 func Use(middleware interface{}) {
 	DefaultMux.Use(middleware)
 }
 
 // Insert the given middleware into the default Mux's middleware stack. See the
-// documentation for web.Mux.Insert for more informatino.
+// documentation for web.Mux.Insert for more information.
 func Insert(middleware, before interface{}) error {
 	return DefaultMux.Insert(middleware, before)
 }
 
 // Remove the given middleware from the default Mux's middleware stack. See the
-// documentation for web.Mux.Abandon for more informatino.
+// documentation for web.Mux.Abandon for more information.
 func Abandon(middleware interface{}) error {
 	return DefaultMux.Abandon(middleware)
 }
