@@ -36,7 +36,7 @@ func main() {
 	// Middleware can be used to inject behavior into your app. The
 	// middleware for this application are defined in middleware.go, but you
 	// can put them wherever you like.
-	goji.Use("PlainText", PlainText)
+	goji.Use(PlainText)
 
 	// If the last character of a pattern is an asterisk, the path is
 	// treated as a prefix, and can be used to implement sub-routes.
@@ -44,7 +44,7 @@ func main() {
 	// Goji's interfaces are completely composable.
 	admin := web.New()
 	goji.Handle("/admin/*", admin)
-	admin.Use("SuperSecure", SuperSecure)
+	admin.Use(SuperSecure)
 
 	// Set up admin routes. Note that sub-routes do *not* mutate the path in
 	// any way, so we need to supply full ("/admin" prefixed) paths.

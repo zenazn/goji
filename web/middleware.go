@@ -12,7 +12,7 @@ const mPoolSize = 32
 
 type mLayer struct {
 	fn   func(*C, http.Handler) http.Handler
-	name string
+	orig interface{}
 }
 
 type mStack struct {
@@ -41,9 +41,8 @@ func (s *cStack) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	s.m.ServeHTTP(w, r)
 }
 
-func (m *mStack) appendLayer(name string, fn interface{}) {
-	var ml mLayer
-	ml.name = name
+func (m *mStack) appendLayer(fn interface{}) {
+	ml := mLayer{orig: fn}
 	switch fn.(type) {
 	case func(http.Handler) http.Handler:
 		unwrapped := fn.(func(http.Handler) http.Handler)
@@ -60,9 +59,9 @@ func (m *mStack) appendLayer(name string, fn interface{}) {
 	m.stack = append(m.stack, ml)
 }
 
-func (m *mStack) findLayer(name string) int {
+func (m *mStack) findLayer(l interface{}) int {
 	for i, middleware := range m.stack {
-		if middleware.name == name {
+		if funcEqual(l, middleware.orig) {
 			return i
 		}
 	}
@@ -138,11 +137,11 @@ func (m *mStack) release(cs *cStack) {
 // Append the given middleware to the middleware stack. See the documentation
 // for type Mux for a list of valid middleware types.
 //
-// No attempt is made to enforce the uniqueness of middleware names.
-func (m *mStack) Use(name string, middleware interface{}) {
+// No attempt is made to enforce the uniqueness of middlewares.
+func (m *mStack) Use(middleware interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	m.appendLayer(name, middleware)
+	m.appendLayer(middleware)
 	m.invalidate()
 }
 
@@ -150,9 +149,9 @@ func (m *mStack) Use(name string, middleware interface{}) {
 // the stack. See the documentation for type Mux for a list of valid middleware
 // types. Returns an error if no middleware has the name given by "before."
 //
-// No attempt is made to enforce the uniqueness of names. If the insertion point
-// is ambiguous, the first (outermost) one is chosen.
-func (m *mStack) Insert(name string, middleware interface{}, before string) error {
+// No attempt is made to enforce the uniqueness of middlewares. If the insertion
+// point is ambiguous, the first (outermost) one is chosen.
+func (m *mStack) Insert(middleware, before interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	i := m.findLayer(before)
@@ -160,7 +159,7 @@ func (m *mStack) Insert(name string, middleware interface{}, before string) erro
 		return fmt.Errorf("web: unknown middleware %v", before)
 	}
 
-	m.appendLayer(name, middleware)
+	m.appendLayer(middleware)
 	inserted := m.stack[len(m.stack)-1]
 	copy(m.stack[i+1:], m.stack[i:])
 	m.stack[i] = inserted
@@ -169,17 +168,17 @@ func (m *mStack) Insert(name string, middleware interface{}, before string) erro
 	return nil
 }
 
-// Remove the given named middleware from the middleware stack. Returns an error
-// if there is no middleware by that name.
+// Remove the given middleware from the middleware stack. Returns an error if
+// no such middleware can be found.
 //
 // If the name of the middleware to delete is ambiguous, the first (outermost)
 // one is chosen.
-func (m *mStack) Abandon(name string) error {
+func (m *mStack) Abandon(middleware interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	i := m.findLayer(name)
+	i := m.findLayer(middleware)
 	if i < 0 {
-		return fmt.Errorf("web: unknown middleware %v", name)
+		return fmt.Errorf("web: unknown middleware %v", middleware)
 	}
 
 	copy(m.stack[i:], m.stack[i+1:])
@@ -187,15 +186,4 @@ func (m *mStack) Abandon(name string) error {
 
 	m.invalidate()
 	return nil
-}
-
-// Returns a list of middleware currently in use.
-func (m *mStack) Middleware() []string {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	stack := make([]string, len(m.stack))
-	for i, ml := range m.stack {
-		stack[i] = ml.name
-	}
-	return stack
 }

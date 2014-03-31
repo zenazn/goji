@@ -11,34 +11,28 @@ var DefaultMux *web.Mux
 func init() {
 	DefaultMux = web.New()
 
-	DefaultMux.Use("RequestId", middleware.RequestId)
-	DefaultMux.Use("Logger", middleware.Logger)
-	DefaultMux.Use("Recoverer", middleware.Recoverer)
-	DefaultMux.Use("AutomaticOptions", middleware.AutomaticOptions)
+	DefaultMux.Use(middleware.RequestId)
+	DefaultMux.Use(middleware.Logger)
+	DefaultMux.Use(middleware.Recoverer)
+	DefaultMux.Use(middleware.AutomaticOptions)
 }
 
 // Append the given middleware to the default Mux's middleware stack. See the
 // documentation for web.Mux.Use for more informatino.
-func Use(name string, middleware interface{}) {
-	DefaultMux.Use(name, middleware)
+func Use(middleware interface{}) {
+	DefaultMux.Use(middleware)
 }
 
 // Insert the given middleware into the default Mux's middleware stack. See the
 // documentation for web.Mux.Insert for more informatino.
-func Insert(name string, middleware interface{}, before string) error {
-	return DefaultMux.Insert(name, middleware, before)
+func Insert(middleware, before interface{}) error {
+	return DefaultMux.Insert(middleware, before)
 }
 
 // Remove the given middleware from the default Mux's middleware stack. See the
 // documentation for web.Mux.Abandon for more informatino.
-func Abandon(name string) error {
-	return DefaultMux.Abandon(name)
-}
-
-// Retrieve the list of middleware from the default Mux's middleware stack. See
-// the documentation for web.Mux.Middleware() for more information.
-func Middleware() []string {
-	return DefaultMux.Middleware()
+func Abandon(middleware interface{}) error {
+	return DefaultMux.Abandon(middleware)
 }
 
 // Add a route to the default Mux. See the documentation for web.Mux for more

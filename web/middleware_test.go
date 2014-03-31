@@ -3,7 +3,6 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -61,8 +60,8 @@ func TestSimple(t *testing.T) {
 
 	ch := make(chan string)
 	st := makeStack(ch)
-	st.Use("one", chanWare(ch, "one"))
-	st.Use("two", chanWare(ch, "two"))
+	st.Use(chanWare(ch, "one"))
+	st.Use(chanWare(ch, "two"))
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "two", "router", "end")
 }
@@ -72,10 +71,10 @@ func TestTypes(t *testing.T) {
 
 	ch := make(chan string)
 	st := makeStack(ch)
-	st.Use("one", func(h http.Handler) http.Handler {
+	st.Use(func(h http.Handler) http.Handler {
 		return h
 	})
-	st.Use("two", func(c *C, h http.Handler) http.Handler {
+	st.Use(func(c *C, h http.Handler) http.Handler {
 		return h
 	})
 }
@@ -85,16 +84,16 @@ func TestAddMore(t *testing.T) {
 
 	ch := make(chan string)
 	st := makeStack(ch)
-	st.Use("one", chanWare(ch, "one"))
+	st.Use(chanWare(ch, "one"))
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "router", "end")
 
-	st.Use("two", chanWare(ch, "two"))
+	st.Use(chanWare(ch, "two"))
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "two", "router", "end")
 
-	st.Use("three", chanWare(ch, "three"))
-	st.Use("four", chanWare(ch, "four"))
+	st.Use(chanWare(ch, "three"))
+	st.Use(chanWare(ch, "four"))
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "two", "three", "four", "router", "end")
 }
@@ -104,18 +103,23 @@ func TestInsert(t *testing.T) {
 
 	ch := make(chan string)
 	st := makeStack(ch)
-	st.Use("one", chanWare(ch, "one"))
-	st.Use("two", chanWare(ch, "two"))
+	one := chanWare(ch, "one")
+	two := chanWare(ch, "two")
+	st.Use(one)
+	st.Use(two)
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "two", "router", "end")
 
-	err := st.Insert("sloth", chanWare(ch, "sloth"), "squirrel")
+	err := st.Insert(chanWare(ch, "sloth"), chanWare(ch, "squirrel"))
 	if err == nil {
 		t.Error("Expected error when referencing unknown middleware")
 	}
 
-	st.Insert("middle", chanWare(ch, "middle"), "two")
-	st.Insert("start", chanWare(ch, "start"), "one")
+	st.Insert(chanWare(ch, "middle"), two)
+	err = st.Insert(chanWare(ch, "start"), one)
+	if err != nil {
+		t.Fatal(err)
+	}
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "start", "one", "middle", "two", "router", "end")
 }
@@ -125,49 +129,32 @@ func TestAbandon(t *testing.T) {
 
 	ch := make(chan string)
 	st := makeStack(ch)
-	st.Use("one", chanWare(ch, "one"))
-	st.Use("two", chanWare(ch, "two"))
-	st.Use("three", chanWare(ch, "three"))
+	one := chanWare(ch, "one")
+	two := chanWare(ch, "two")
+	three := chanWare(ch, "three")
+	st.Use(one)
+	st.Use(two)
+	st.Use(three)
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "two", "three", "router", "end")
 
-	st.Abandon("two")
+	st.Abandon(two)
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "three", "router", "end")
 
-	err := st.Abandon("panda")
+	err := st.Abandon(chanWare(ch, "panda"))
 	if err == nil {
 		t.Error("Expected error when deleting unknown middleware")
 	}
 
-	st.Abandon("one")
-	st.Abandon("three")
+	st.Abandon(one)
+	st.Abandon(three)
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "router", "end")
 
-	st.Use("one", chanWare(ch, "one"))
+	st.Use(one)
 	go simpleRequest(ch, st)
 	assertOrder(t, ch, "one", "router", "end")
-}
-
-func TestMiddlewareList(t *testing.T) {
-	t.Parallel()
-
-	ch := make(chan string)
-	st := makeStack(ch)
-	st.Use("one", chanWare(ch, "one"))
-	st.Use("two", chanWare(ch, "two"))
-	st.Insert("mid", chanWare(ch, "mid"), "two")
-	st.Insert("before", chanWare(ch, "before"), "mid")
-	st.Abandon("one")
-
-	m := st.Middleware()
-	if !reflect.DeepEqual(m, []string{"before", "mid", "two"}) {
-		t.Error("Middleware list was not as expected")
-	}
-
-	go simpleRequest(ch, st)
-	assertOrder(t, ch, "before", "mid", "two", "router", "end")
 }
 
 // This is a pretty sketchtacular test
@@ -225,7 +212,7 @@ func TestContext(t *testing.T) {
 		pool:   make(chan *cStack, mPoolSize),
 		router: HandlerFunc(router),
 	}
-	st.Use("one", func(c *C, h http.Handler) http.Handler {
+	st.Use(func(c *C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if c.Env != nil || c.UrlParams != nil {
 				t.Error("Expected a clean context")
@@ -238,7 +225,7 @@ func TestContext(t *testing.T) {
 		return http.HandlerFunc(fn)
 	})
 
-	st.Use("two", func(c *C, h http.Handler) http.Handler {
+	st.Use(func(c *C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if c.Env == nil {
 				t.Error("Expected env from last middleware")
