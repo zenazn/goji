@@ -25,7 +25,7 @@ func TestIfItWorks(t *testing.T) {
 				greeting = g.(string)
 			}
 		}
-		ch <- greeting + c.UrlParams["name"]
+		ch <- greeting + c.URLParams["name"]
 	})
 
 	r, _ := http.NewRequest("GET", "/hello/carl", nil)

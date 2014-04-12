@@ -17,7 +17,7 @@ func pt(url string, match bool, params map[string]string) patternTest {
 		r:     req,
 		match: match,
 		c:     &C{},
-		cout:  &C{UrlParams: params},
+		cout:  &C{URLParams: params},
 	}
 }
 

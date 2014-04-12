@@ -214,7 +214,7 @@ func TestContext(t *testing.T) {
 	}
 	st.Use(func(c *C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			if c.Env != nil || c.UrlParams != nil {
+			if c.Env != nil || c.URLParams != nil {
 				t.Error("Expected a clean context")
 			}
 			c.Env = make(map[string]interface{})
