@@ -170,7 +170,7 @@ func TestPrefix(t *testing.T) {
 	select {
 	case val := <-ch:
 		if val != "/hello/world" {
-			t.Error("Got %q, expected /hello/world", val)
+			t.Errorf("Got %q, expected /hello/world", val)
 		}
 	case <-time.After(5 * time.Millisecond):
 		t.Errorf("Timeout waiting for hello")
