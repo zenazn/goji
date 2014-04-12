@@ -213,22 +213,22 @@ doesn't strip this prefix from the path before forwarding it on (e.g., the
 handler will see the full path, including the "/admin" part), but this
 functionality can easily be performed by an extra middleware layer.
 */
-func (m *router) Handle(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mALL, handler)
+func (rt *router) Handle(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mALL, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // CONNECT. See the documentation for type Mux for a description of what types
 // are accepted for pattern and handler.
-func (m *router) Connect(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mCONNECT, handler)
+func (rt *router) Connect(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mCONNECT, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // DELETE. See the documentation for type Mux for a description of what types
 // are accepted for pattern and handler.
-func (m *router) Delete(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mDELETE, handler)
+func (rt *router) Delete(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mDELETE, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
@@ -239,50 +239,50 @@ func (m *router) Delete(pattern interface{}, handler interface{}) {
 // take care of all the fiddly bits for you. If you wish to provide an alternate
 // implementation of HEAD, you should add a handler explicitly and place it
 // above your GET handler.
-func (m *router) Get(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mGET|mHEAD, handler)
+func (rt *router) Get(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mGET|mHEAD, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // HEAD. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
-func (m *router) Head(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mHEAD, handler)
+func (rt *router) Head(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mHEAD, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // OPTIONS. See the documentation for type Mux for a description of what types
 // are accepted for pattern and handler.
-func (m *router) Options(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mOPTIONS, handler)
+func (rt *router) Options(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mOPTIONS, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // PATCH. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
-func (m *router) Patch(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mPATCH, handler)
+func (rt *router) Patch(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mPATCH, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // POST. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
-func (m *router) Post(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mPOST, handler)
+func (rt *router) Post(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mPOST, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // PUT. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
-func (m *router) Put(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mPUT, handler)
+func (rt *router) Put(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mPUT, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
 // TRACE. See the documentation for type Mux for a description of what types are
 // accepted for pattern and handler.
-func (m *router) Trace(pattern interface{}, handler interface{}) {
-	m.handleUntyped(pattern, mTRACE, handler)
+func (rt *router) Trace(pattern interface{}, handler interface{}) {
+	rt.handleUntyped(pattern, mTRACE, handler)
 }
 
 // Set the fallback (i.e., 404) handler for this mux. See the documentation for
@@ -292,6 +292,6 @@ func (m *router) Trace(pattern interface{}, handler interface{}) {
 // (also available as the constant ValidMethodsKey) will be set to the list of
 // HTTP methods that could have been routed had they been provided on an
 // otherwise identical request.
-func (m *router) NotFound(handler interface{}) {
-	m.notFound = parseHandler(handler)
+func (rt *router) NotFound(handler interface{}) {
+	rt.notFound = parseHandler(handler)
 }
