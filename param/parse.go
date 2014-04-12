@@ -159,7 +159,7 @@ func parseSlice(key, keytail string, values []string, target reflect.Value) {
 
 	slice := reflect.MakeSlice(t, len(values), len(values))
 	kp := kpath(key, keytail)
-	for i, _ := range values {
+	for i := range values {
 		// We actually cheat a little bit and modify the key so we can
 		// generate better debugging messages later
 		key := fmt.Sprintf("%s[%d]", kp, i)
