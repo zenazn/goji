@@ -98,14 +98,14 @@ func parsePattern(p interface{}) Pattern {
 	panic("log.Fatalf does not return")
 }
 
-type netHttpWrap struct {
+type netHTTPWrap struct {
 	http.Handler
 }
 
-func (h netHttpWrap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h netHTTPWrap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
-func (h netHttpWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
+func (h netHTTPWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
 
@@ -114,13 +114,13 @@ func parseHandler(h interface{}) Handler {
 	case Handler:
 		return h.(Handler)
 	case http.Handler:
-		return netHttpWrap{h.(http.Handler)}
+		return netHTTPWrap{h.(http.Handler)}
 	case func(c C, w http.ResponseWriter, r *http.Request):
 		f := h.(func(c C, w http.ResponseWriter, r *http.Request))
 		return HandlerFunc(f)
 	case func(w http.ResponseWriter, r *http.Request):
 		f := h.(func(w http.ResponseWriter, r *http.Request))
-		return netHttpWrap{http.HandlerFunc(f)}
+		return netHTTPWrap{http.HandlerFunc(f)}
 	default:
 		log.Fatalf("Unknown handler type %v. Expected a web.Handler, "+
 			"a http.Handler, or a function with signature func(C, "+
