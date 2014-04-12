@@ -56,10 +56,6 @@ type Mux struct {
 	router
 }
 
-// Sanity check types
-var _ http.Handler = &Mux{}
-var _ Handler = &Mux{}
-
 // New creates a new Mux without any routes or middleware.
 func New() *Mux {
 	mux := Mux{
