@@ -25,13 +25,6 @@ import (
 	"time"
 )
 
-// Exactly like net/http's Server. In fact, it *is* a net/http Server, just with
-// different method implementations
-type Server http.Server
-
-// About 200 years, also known as "forever"
-const forever time.Duration = 200 * 365 * 24 * time.Hour
-
 /*
 You might notice that these methods look awfully similar to the methods of the
 same name from the go standard library--that's because they were stolen from
@@ -44,8 +37,9 @@ Since I couldn't come up with a better idea, I just copy-and-pasted both
 ListenAndServe and ListenAndServeTLS here more-or-less verbatim. "Oh well!"
 */
 
-// Behaves exactly like the net/http function of the same name.
-func (srv *Server) Serve(l net.Listener) (err error) {
+type server http.Server
+
+func (srv *server) Serve(l net.Listener) (err error) {
 	go func() {
 		<-kill
 		l.Close()
@@ -74,8 +68,10 @@ func (srv *Server) Serve(l net.Listener) (err error) {
 	}
 }
 
-// Behaves exactly like the net/http function of the same name.
-func (srv *Server) ListenAndServe() error {
+// About 200 years, also known as "forever"
+const forever time.Duration = 200 * 365 * 24 * time.Hour
+
+func (srv *server) ListenAndServe() error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":http"
@@ -87,8 +83,7 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve(l)
 }
 
-// Behaves exactly like the net/http function of the same name.
-func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
+func (srv *server) ListenAndServeTLS(certFile, keyFile string) error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":https"
@@ -117,20 +112,20 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	return srv.Serve(tlsListener)
 }
 
-// Behaves exactly like the net/http function of the same name.
+// ListenAndServe behaves exactly like the net/http function of the same name.
 func ListenAndServe(addr string, handler http.Handler) error {
-	server := &Server{Addr: addr, Handler: handler}
+	server := &server{Addr: addr, Handler: handler}
 	return server.ListenAndServe()
 }
 
-// Behaves exactly like the net/http function of the same name.
+// ListenAndServeTLS behaves exactly like the net/http function of the same name.
 func ListenAndServeTLS(addr, certfile, keyfile string, handler http.Handler) error {
-	server := &Server{Addr: addr, Handler: handler}
+	server := &server{Addr: addr, Handler: handler}
 	return server.ListenAndServeTLS(certfile, keyfile)
 }
 
-// Behaves exactly like the net/http function of the same name.
+// Serve behaves exactly like the net/http function of the same name.
 func Serve(l net.Listener, handler http.Handler) error {
-	server := &Server{Handler: handler}
+	server := &server{Handler: handler}
 	return server.Serve(l)
 }
