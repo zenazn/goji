@@ -39,7 +39,7 @@ func AddSignal(sig ...os.Signal) {
 	signal.Notify(sigchan, sig...)
 }
 
-// ResetSignals resets  the list of signals that trigger a graceful shutdown.
+// ResetSignals resets the list of signals that trigger a graceful shutdown.
 // Useful if, for instance, you don't want to use the default interrupt (SIGINT)
 // handler. Since we necessarily install the SIGINT handler before you have a
 // chance to call ResetSignals(), there will be a brief window during which the
@@ -57,7 +57,7 @@ func (u userShutdown) String() string {
 }
 func (u userShutdown) Signal() {}
 
-// Shutdown manually trigger a shutdown from your application. Like Wait(),
+// Shutdown manually triggers a shutdown from your application. Like Wait(),
 // blocks until all connections have gracefully shut down.
 func Shutdown() {
 	sigchan <- userShutdown{}
