@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+// Sanity check types
+var _ http.Handler = &Mux{}
+var _ Handler = &Mux{}
+
 // There's... really not a lot to do here.
 
 func TestIfItWorks(t *testing.T) {

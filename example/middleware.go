@@ -8,7 +8,7 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-// Middleware to render responses as plain text.
+// PlainText sets the content-type of responses to text/plain.
 func PlainText(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
@@ -20,7 +20,7 @@ func PlainText(h http.Handler) http.Handler {
 // Nobody will ever guess this!
 const Password = "admin:admin"
 
-// HTTP Basic Auth middleware for super-secret admin page. Shhhh!
+// SuperSecure is HTTP Basic Auth middleware for super-secret admin page. Shhhh!
 func SuperSecure(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")

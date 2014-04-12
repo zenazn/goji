@@ -8,9 +8,10 @@ import (
 )
 
 /*
-Graceful shutdown middleware. When a graceful shutdown is in progress, this
-middleware intercepts responses to add a "Connection: close" header to politely
-inform the client that we are about to go away.
+Middleware adds graceful shutdown capabilities to the given handler. When a
+graceful shutdown is in progress, this middleware intercepts responses to add a
+"Connection: close" header to politely inform the client that we are about to go
+away.
 
 This package creates a shim http.ResponseWriter that it passes to subsequent
 handlers. Unfortunately, there's a great many optional interfaces that this

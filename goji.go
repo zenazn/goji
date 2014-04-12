@@ -42,7 +42,7 @@ import (
 	"github.com/zenazn/goji/graceful"
 )
 
-// Start Goji using reasonable defaults.
+// Serve starts Goji using reasonable defaults.
 func Serve() {
 	if !flag.Parsed() {
 		flag.Parse()

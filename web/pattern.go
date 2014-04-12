@@ -29,11 +29,11 @@ func (p regexpPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 		return true
 	}
 
-	if c.UrlParams == nil {
-		c.UrlParams = make(map[string]string, len(matches)-1)
+	if c.URLParams == nil {
+		c.URLParams = make(map[string]string, len(matches)-1)
 	}
 	for i := 1; i < len(matches); i++ {
-		c.UrlParams[p.names[i]] = matches[i]
+		c.URLParams[p.names[i]] = matches[i]
 	}
 	return true
 }
@@ -185,11 +185,11 @@ func (s stringPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 		return true
 	}
 
-	if c.UrlParams == nil && len(matches) > 0 {
-		c.UrlParams = make(map[string]string, len(matches)-1)
+	if c.URLParams == nil && len(matches) > 0 {
+		c.URLParams = make(map[string]string, len(matches)-1)
 	}
 	for i, match := range matches {
-		c.UrlParams[s.pats[i]] = match
+		c.URLParams[s.pats[i]] = match
 	}
 	return true
 }

@@ -5,7 +5,7 @@ import (
 )
 
 /*
-An HTTP multiplexer, much like net/http's ServeMux.
+Mux is an HTTP multiplexer, much like net/http's ServeMux.
 
 Routes may be added using any of the various HTTP-method-specific functions.
 When processing a request, when iterating in insertion order the first route
@@ -56,11 +56,7 @@ type Mux struct {
 	router
 }
 
-// Sanity check types
-var _ http.Handler = &Mux{}
-var _ Handler = &Mux{}
-
-// Create a new Mux without any routes or middleware.
+// New creates a new Mux without any routes or middleware.
 func New() *Mux {
 	mux := Mux{
 		mStack: mStack{
@@ -76,7 +72,6 @@ func New() *Mux {
 	return &mux
 }
 
-// Serve a request with the given Mux. Satisfies the http.Handler interface.
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
 	defer m.mStack.release(stack)
@@ -84,8 +79,8 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack.ServeHTTP(w, r)
 }
 
-// Serve a context dependent request with the given Mux. Satisfies the
-// web.Handler interface.
+// ServeHTTPC creates a context dependent request with the given Mux. Satisfies
+// the web.Handler interface.
 func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
 	defer m.mStack.release(stack)

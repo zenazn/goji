@@ -15,9 +15,9 @@ type gracefulConn interface {
 	gracefulShutdown()
 }
 
-// Wrap an arbitrary net.Listener for use with graceful shutdowns. All
-// net.Conn's Accept()ed by this listener will be auto-wrapped as if WrapConn()
-// were called on them.
+// WrapListener wraps an arbitrary net.Listener for use with graceful shutdowns.
+// All net.Conn's Accept()ed by this listener will be auto-wrapped as if
+// WrapConn() were called on them.
 func WrapListener(l net.Listener) net.Listener {
 	return listener{l}
 }
@@ -32,9 +32,9 @@ func (l listener) Accept() (net.Conn, error) {
 }
 
 /*
-Wrap an arbitrary connection for use with graceful shutdowns. The graceful
-shutdown process will ensure that this connection is closed before terminating
-the process.
+WrapConn wraps an arbitrary connection for use with graceful shutdowns. The
+graceful shutdown process will ensure that this connection is closed before
+terminating the process.
 
 In order to use this function, you must call SetReadDeadline() before the call
 to Read() you might make to read a new request off the wire.  The connection is

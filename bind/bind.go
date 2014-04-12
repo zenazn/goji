@@ -67,7 +67,7 @@ func listenTo(bind string) (net.Listener, error) {
 	} else if strings.HasPrefix(bind, "fd@") {
 		fd, err := strconv.Atoi(bind[3:])
 		if err != nil {
-			return nil, fmt.Errorf("Error while parsing fd %v: %v",
+			return nil, fmt.Errorf("error while parsing fd %v: %v",
 				bind, err)
 		}
 		f := os.NewFile(uintptr(fd), bind)
@@ -76,16 +76,17 @@ func listenTo(bind string) (net.Listener, error) {
 		fd, err := strconv.Atoi(bind[8:])
 		if err != nil {
 			return nil, fmt.Errorf(
-				"Error while parsing einhorn %v: %v", bind, err)
+				"error while parsing einhorn %v: %v", bind, err)
 		}
 		return einhornBind(fd)
 	}
 
-	return nil, fmt.Errorf("Error while parsing bind arg %v", bind)
+	return nil, fmt.Errorf("error while parsing bind arg %v", bind)
 }
 
-// Parse and bind to the specified address. If Socket encounters an error while
-// parsing or binding to the given socket it will exit by calling log.Fatal.
+// Socket parses and binds to the specified address. If Socket encounters an
+// error while parsing or binding to the given socket it will exit by calling
+// log.Fatal.
 func Socket(bind string) net.Listener {
 	l, err := listenTo(bind)
 	if err != nil {
@@ -94,9 +95,9 @@ func Socket(bind string) net.Listener {
 	return l
 }
 
-// Parse and bind to the default socket as given to us by the flag module. If
-// there was an error parsing or binding to that socket, Default will exit by
-// calling `log.Fatal`.
+// Default parses and binds to the default socket as given to us by the flag
+// module. If there was an error parsing or binding to that socket, Default will
+// exit by calling `log.Fatal`.
 func Default() net.Listener {
 	return Socket(bind)
 }
@@ -105,9 +106,10 @@ func Default() net.Listener {
 // as well be safe against it...
 var ready sync.Once
 
-// Notify the environment (for now, just Einhorn) that the process is ready to
-// receive traffic. Should be called at the last possible moment to maximize the
-// chances that a faulty process exits before signaling that it's ready.
+// Ready notifies the environment (for now, just Einhorn) that the process is
+// ready to receive traffic. Should be called at the last possible moment to
+// maximize the chances that a faulty process exits before signaling that it's
+// ready.
 func Ready() {
 	ready.Do(func() {
 		einhornAck()

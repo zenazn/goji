@@ -13,7 +13,7 @@ import (
 )
 
 // Key to use when setting the request ID.
-const RequestIdKey = "reqId"
+const RequestIDKey = "reqID"
 
 var prefix string
 var reqid uint64
@@ -33,18 +33,18 @@ func init() {
 	prefix = fmt.Sprintf("%s/%s", hostname, b64[0:8])
 }
 
-// RequestId is a middleware that injects a request ID into the context of each
+// RequestID is a middleware that injects a request ID into the context of each
 // request. A request ID is a string of the form "host.example.com/random-0001",
 // where "random" is a base62 random string that uniquely identifies this go
 // process, and where the last number is an atomically incremented request
 // counter.
-func RequestId(c *web.C, h http.Handler) http.Handler {
+func RequestID(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if c.Env == nil {
 			c.Env = make(map[string]interface{})
 		}
 		myid := atomic.AddUint64(&reqid, 1)
-		c.Env[RequestIdKey] = fmt.Sprintf("%s-%06d", prefix, myid)
+		c.Env[RequestIDKey] = fmt.Sprintf("%s-%06d", prefix, myid)
 
 		h.ServeHTTP(w, r)
 	}
@@ -52,19 +52,18 @@ func RequestId(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-// Get a request ID from the given context if one is present. Returns the empty
-// string if a request ID cannot be found.
-func GetReqId(c web.C) string {
+// GetReqID returns a request ID from the given context if one is present.
+// Returns the empty string if a request ID cannot be found.
+func GetReqID(c web.C) string {
 	if c.Env == nil {
 		return ""
 	}
-	v, ok := c.Env[RequestIdKey]
+	v, ok := c.Env[RequestIDKey]
 	if !ok {
 		return ""
 	}
-	if reqId, ok := v.(string); ok {
-		return reqId
-	} else {
-		return ""
+	if reqID, ok := v.(string); ok {
+		return reqID
 	}
+	return ""
 }
