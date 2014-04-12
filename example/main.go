@@ -46,9 +46,13 @@ func main() {
 	goji.Handle("/admin/*", admin)
 	admin.Use(SuperSecure)
 
+	// Goji's routing, like Sinatra's, is exact: no effort is made to
+	// normalize trailing slashes.
+	goji.Get("/admin", http.RedirectHandler("/admin/", 301))
+
 	// Set up admin routes. Note that sub-routes do *not* mutate the path in
-	// any way, so we need to supply full ("/admin" prefixed) paths.
-	admin.Get("/admin", AdminRoot)
+	// any way, so we need to supply full ("/admin/" prefixed) paths.
+	admin.Get("/admin/", AdminRoot)
 	admin.Get("/admin/finances", AdminFinances)
 
 	// Use a custom 404 handler
