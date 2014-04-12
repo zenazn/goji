@@ -11,7 +11,7 @@ var DefaultMux *web.Mux
 func init() {
 	DefaultMux = web.New()
 
-	DefaultMux.Use(middleware.RequestId)
+	DefaultMux.Use(middleware.RequestID)
 	DefaultMux.Use(middleware.Logger)
 	DefaultMux.Use(middleware.Recoverer)
 	DefaultMux.Use(middleware.AutomaticOptions)
