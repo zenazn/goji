@@ -78,7 +78,7 @@ type Pattern interface {
 	// Returns true if the request satisfies the pattern. This function is
 	// free to examine both the request and the context to make this
 	// decision. After it is certain that the request matches, this function
-	// should mutate or create c.UrlParams if necessary, unless dryrun is
+	// should mutate or create c.URLParams if necessary, unless dryrun is
 	// set.
 	Match(r *http.Request, c *C, dryrun bool) bool
 }

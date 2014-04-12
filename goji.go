@@ -13,7 +13,7 @@ Example:
 	)
 
 	func hello(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %s!", c.UrlParams["name"])
+		fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
 	}
 
 	func main() {

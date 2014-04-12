@@ -31,11 +31,11 @@ Use your favorite HTTP verbs:
 Bind parameters using either Sinatra-like patterns or regular expressions:
 
 	m.Get("/hello/:name", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %s!", c.UrlParams["name"])
+		fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
 	})
 	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
 	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Printf(w, "Info for IP address %s:", c.UrlParams["ip"])
+		fmt.Printf(w, "Info for IP address %s:", c.URLParams["ip"])
 	})
 
 Middleware are functions that wrap http.Handlers, just like you'd use with raw
@@ -84,7 +84,7 @@ layers and to the final request handler.
 As an implementation detail, references to these structs are reused between
 requests to reduce allocation churn, but the maps they contain are created fresh
 on every request. If you are closing over a context (especially relevant for
-middleware), you should not close over either the UrlParams or Env objects,
+middleware), you should not close over either the URLParams or Env objects,
 instead accessing them through the context whenever they are required.
 */
 type C struct {
