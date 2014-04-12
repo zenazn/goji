@@ -16,11 +16,11 @@ import (
 // Recoverer prints a request ID if one is provided.
 func Recoverer(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		reqId := GetReqId(*c)
+		reqID := GetReqID(*c)
 
 		defer func() {
 			if err := recover(); err != nil {
-				printPanic(reqId, err)
+				printPanic(reqID, err)
 				debug.PrintStack()
 				http.Error(w, http.StatusText(500), 500)
 			}
@@ -32,11 +32,11 @@ func Recoverer(c *web.C, h http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func printPanic(reqId string, err interface{}) {
+func printPanic(reqID string, err interface{}) {
 	var buf bytes.Buffer
 
-	if reqId != "" {
-		cW(&buf, bBlack, "[%s] ", reqId)
+	if reqID != "" {
+		cW(&buf, bBlack, "[%s] ", reqID)
 	}
 	cW(&buf, bRed, "panic: %#v", err)
 

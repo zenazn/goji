@@ -17,9 +17,9 @@ import (
 // Logger prints a request ID if one is provided.
 func Logger(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		reqId := GetReqId(*c)
+		reqID := GetReqID(*c)
 
-		printStart(reqId, r)
+		printStart(reqID, r)
 
 		lw := wrapWriter(w)
 
@@ -28,17 +28,17 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 		lw.maybeWriteHeader()
 		t2 := time.Now()
 
-		printEnd(reqId, lw, t2.Sub(t1))
+		printEnd(reqID, lw, t2.Sub(t1))
 	}
 
 	return http.HandlerFunc(fn)
 }
 
-func printStart(reqId string, r *http.Request) {
+func printStart(reqID string, r *http.Request) {
 	var buf bytes.Buffer
 
-	if reqId != "" {
-		cW(&buf, bBlack, "[%s] ", reqId)
+	if reqID != "" {
+		cW(&buf, bBlack, "[%s] ", reqID)
 	}
 	buf.WriteString("Started ")
 	cW(&buf, bMagenta, "%s ", r.Method)
@@ -49,11 +49,11 @@ func printStart(reqId string, r *http.Request) {
 	log.Print(buf.String())
 }
 
-func printEnd(reqId string, w writerProxy, dt time.Duration) {
+func printEnd(reqID string, w writerProxy, dt time.Duration) {
 	var buf bytes.Buffer
 
-	if reqId != "" {
-		cW(&buf, bBlack, "[%s] ", reqId)
+	if reqID != "" {
+		cW(&buf, bBlack, "[%s] ", reqID)
 	}
 	buf.WriteString("Returning ")
 	if w.status() < 200 {
