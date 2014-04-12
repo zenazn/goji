@@ -72,7 +72,6 @@ func New() *Mux {
 	return &mux
 }
 
-// Serve a request with the given Mux. Satisfies the http.Handler interface.
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
 	defer m.mStack.release(stack)
