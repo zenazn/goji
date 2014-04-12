@@ -95,9 +95,9 @@ func Socket(bind string) net.Listener {
 	return l
 }
 
-// Parse and bind to the default socket as given to us by the flag module. If
-// there was an error parsing or binding to that socket, Default will exit by
-// calling `log.Fatal`.
+// Default parses and binds to the default socket as given to us by the flag
+// module. If there was an error parsing or binding to that socket, Default will
+// exit by calling `log.Fatal`.
 func Default() net.Listener {
 	return Socket(bind)
 }
@@ -106,9 +106,10 @@ func Default() net.Listener {
 // as well be safe against it...
 var ready sync.Once
 
-// Notify the environment (for now, just Einhorn) that the process is ready to
-// receive traffic. Should be called at the last possible moment to maximize the
-// chances that a faulty process exits before signaling that it's ready.
+// Ready notifies the environment (for now, just Einhorn) that the process is
+// ready to receive traffic. Should be called at the last possible moment to
+// maximize the chances that a faulty process exits before signaling that it's
+// ready.
 func Ready() {
 	ready.Do(func() {
 		einhornAck()

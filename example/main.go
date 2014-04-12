@@ -71,8 +71,8 @@ func Root(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Create a new greet (POST "/greets"). Creates a greet and redirects you to the
-// created greet.
+// NewGreet creates a new greet (POST "/greets"). Creates a greet and redirects
+// you to the created greet.
 //
 // To post a new greet, try this at a shell:
 // $ now=$(date +'%Y-%m-%mT%H:%M:%SZ')
@@ -96,7 +96,7 @@ func NewGreet(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusCreated)
 }
 
-// Get a given user and her greets (GET "/user/:name")
+// GetUser finds a given user and her greets (GET "/user/:name")
 func GetUser(c web.C, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Gritter\n======\n\n")
 	handle := c.UrlParams["name"]
@@ -116,8 +116,8 @@ func GetUser(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Get a particular greet by ID (GET "/greet/\d+"). Does no bounds checking, so
-// will probably panic.
+// GetGreet finds a particular greet by ID (GET "/greet/\d+"). Does no bounds
+// checking, so will probably panic.
 func GetGreet(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(c.UrlParams["id"])
 	if err != nil {
@@ -131,17 +131,18 @@ func GetGreet(c web.C, w http.ResponseWriter, r *http.Request) {
 	greet.Write(w)
 }
 
-// Admin root (GET "/admin/root"). Much secret. Very administrate. Wow.
+// AdminRoot is root (GET "/admin/root"). Much secret. Very administrate. Wow.
 func AdminRoot(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Gritter\n======\n\nSuper secret admin page!\n")
 }
 
-// How are we doing? (GET "/admin/finances")
+// AdminFinances would answer the question 'How are we doing?'
+// (GET "/admin/finances")
 func AdminFinances(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Gritter\n======\n\nWe're broke! :(\n")
 }
 
-// 404 handler.
+// NotFound is a 404 handler.
 func NotFound(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Umm... have you tried turning it off and on again?", 404)
 }

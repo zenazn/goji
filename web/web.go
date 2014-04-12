@@ -78,8 +78,8 @@ import (
 )
 
 /*
-Per-request context object. Threaded through all compliant middleware layers and
-to the final request handler.
+C is a per-request context object which is threaded through all compliant middleware
+layers and to the final request handler.
 
 As an implementation detail, references to these structs are reused between
 requests to reduce allocation churn, but the maps they contain are created fresh
@@ -101,22 +101,23 @@ type C struct {
 	Env map[string]interface{}
 }
 
-// A superset of net/http's http.Handler, which also includes a mechanism for
-// serving requests with a context. If your handler does not support the use of
-// contexts, we encourage you to use http.Handler instead.
+// Handler is a superset of net/http's http.Handler, which also includes a
+// mechanism for serving requests with a context. If your handler does not
+// support the use of contexts, we encourage you to use http.Handler instead.
 type Handler interface {
 	http.Handler
 	ServeHTTPC(C, http.ResponseWriter, *http.Request)
 }
 
-// Like net/http's http.HandlerFunc, but supports a context object. Implements
-// both http.Handler and web.Handler free of charge.
+// HandlerFunc is like net/http's http.HandlerFunc, but supports a context
+// object. Implements both http.Handler and web.Handler free of charge.
 type HandlerFunc func(C, http.ResponseWriter, *http.Request)
 
 func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h(C{}, w, r)
 }
 
+// ServeHTTPC wraps ServeHTTP with a context parameter.
 func (h HandlerFunc) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	h(c, w, r)
 }

@@ -61,7 +61,7 @@ type router struct {
 	notFound Handler
 }
 
-// A pattern determines whether or not a given request matches some criteria.
+// A Pattern determines whether or not a given request matches some criteria.
 // They are often used in routes, which are essentially (pattern, methodSet,
 // handler) tuples. If the method and pattern match, the given handler is used.
 //

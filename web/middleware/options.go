@@ -9,8 +9,8 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-// Automatically return an appropriate "Allow" header when the request method is
-// OPTIONS and the request would have otherwise been 404'd.
+// AutomaticOptions automatically return an appropriate "Allow" header when the
+// request method is OPTIONS and the request would have otherwise been 404'd.
 func AutomaticOptions(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		// This will probably slow down OPTIONS calls a bunch, but it

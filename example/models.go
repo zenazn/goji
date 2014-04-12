@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// A greet is a 140-character micro-blogpost that has no resemblance whatsoever
+// A Greet is a 140-character micro-blogpost that has no resemblance whatsoever
 // to the noise a bird makes.
 type Greet struct {
 	User    string    `param:"user"`
@@ -30,7 +30,8 @@ func (g Greet) Write(w io.Writer) {
 		g.Time.Format(time.UnixDate))
 }
 
-// A user
+// A User is a person. It may even be someone you know. Or a rabbit. Hard to say
+// from here.
 type User struct {
 	Name, Bio string
 }
