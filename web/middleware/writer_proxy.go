@@ -16,9 +16,8 @@ func wrapWriter(w http.ResponseWriter) writerProxy {
 	bw := basicWriter{ResponseWriter: w}
 	if cn && fl && hj && rf {
 		return &fancyWriter{bw}
-	} else {
-		return &bw
 	}
+	return &bw
 }
 
 type writerProxy interface {

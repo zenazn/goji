@@ -58,9 +58,8 @@ func getValidMethods(c web.C) []string {
 	}
 	if methods, ok := v.([]string); ok {
 		return methods
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // Assumption: the list of methods is teensy, and that anything we could
