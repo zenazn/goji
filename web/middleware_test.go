@@ -203,7 +203,7 @@ func TestInvalidation(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	router := func(c C, w http.ResponseWriter, r *http.Request) {
-		if c.Env["reqId"].(int) != 2 {
+		if c.Env["reqID"].(int) != 2 {
 			t.Error("Request id was not 2 :(")
 		}
 	}
@@ -218,7 +218,7 @@ func TestContext(t *testing.T) {
 				t.Error("Expected a clean context")
 			}
 			c.Env = make(map[string]interface{})
-			c.Env["reqId"] = 1
+			c.Env["reqID"] = 1
 
 			h.ServeHTTP(w, r)
 		}
@@ -230,7 +230,7 @@ func TestContext(t *testing.T) {
 			if c.Env == nil {
 				t.Error("Expected env from last middleware")
 			}
-			c.Env["reqId"] = c.Env["reqId"].(int) + 1
+			c.Env["reqID"] = c.Env["reqID"].(int) + 1
 
 			h.ServeHTTP(w, r)
 		}
