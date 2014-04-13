@@ -37,9 +37,11 @@ Since I couldn't come up with a better idea, I just copy-and-pasted both
 ListenAndServe and ListenAndServeTLS here more-or-less verbatim. "Oh well!"
 */
 
-type server http.Server
+// Type Server is exactly the same as an http.Server, but provides more graceful
+// implementations of its methods.
+type Server http.Server
 
-func (srv *server) Serve(l net.Listener) (err error) {
+func (srv *Server) Serve(l net.Listener) (err error) {
 	go func() {
 		<-kill
 		l.Close()
@@ -71,7 +73,7 @@ func (srv *server) Serve(l net.Listener) (err error) {
 // About 200 years, also known as "forever"
 const forever time.Duration = 200 * 365 * 24 * time.Hour
 
-func (srv *server) ListenAndServe() error {
+func (srv *Server) ListenAndServe() error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":http"
@@ -83,7 +85,7 @@ func (srv *server) ListenAndServe() error {
 	return srv.Serve(l)
 }
 
-func (srv *server) ListenAndServeTLS(certFile, keyFile string) error {
+func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":https"
@@ -114,18 +116,18 @@ func (srv *server) ListenAndServeTLS(certFile, keyFile string) error {
 
 // ListenAndServe behaves exactly like the net/http function of the same name.
 func ListenAndServe(addr string, handler http.Handler) error {
-	server := &server{Addr: addr, Handler: handler}
+	server := &Server{Addr: addr, Handler: handler}
 	return server.ListenAndServe()
 }
 
 // ListenAndServeTLS behaves exactly like the net/http function of the same name.
 func ListenAndServeTLS(addr, certfile, keyfile string, handler http.Handler) error {
-	server := &server{Addr: addr, Handler: handler}
+	server := &Server{Addr: addr, Handler: handler}
 	return server.ListenAndServeTLS(certfile, keyfile)
 }
 
 // Serve behaves exactly like the net/http function of the same name.
 func Serve(l net.Listener, handler http.Handler) error {
-	server := &server{Handler: handler}
+	server := &Server{Handler: handler}
 	return server.Serve(l)
 }
