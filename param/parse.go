@@ -72,9 +72,7 @@ func primitive(tipe, key, keytail string, values []string) {
 
 func keyed(tipe reflect.Type, key, keytail string) (string, string) {
 	idx := strings.IndexRune(keytail, ']')
-	// Keys must be at least 1 rune wide: we refuse to use the empty string
-	// as the key
-	if len(keytail) < 3 || keytail[0] != '[' || idx < 2 {
+	if keytail[0] != '[' || idx == -1 {
 		perr("expected a square bracket delimited index for %q "+
 			"(of type %v)", kpath(key, keytail), tipe)
 	}
