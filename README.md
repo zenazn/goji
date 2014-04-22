@@ -1,10 +1,7 @@
-Goji
+Goji [![GoDoc](https://godoc.org/github.com/zenazn/goji?status.png)](https://godoc.org/github.com/zenazn/goji) [![Build Status](https://travis-ci.org/zenazn/goji.svg)](https://travis-ci.org/zenazn/goji)
 ====
 
-Goji is a minimalistic web framework inspired by Sinatra. [Godoc][doc].
-
-[doc]: http://godoc.org/github.com/zenazn/goji
-
+Goji is a minimalistic web framework inspired by Sinatra.
 
 Example
 -------
