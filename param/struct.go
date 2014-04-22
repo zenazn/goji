@@ -108,8 +108,12 @@ func extractHandler(s reflect.Type, sf reflect.StructField) func(string, string,
 func parseStructField(cache structCache, key, sk, keytail string, values []string, target reflect.Value) {
 	l, ok := cache[sk]
 	if !ok {
-		perr("unknown key %q for struct at key %q", sk,
-			kpath(key, keytail))
+		panic(KeyError{
+			FullKey: key,
+			Key:     kpath(key, keytail),
+			Type:    target.Type(),
+			Field:   sk,
+		})
 	}
 	f := target.Field(l.offset)
 

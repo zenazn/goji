@@ -59,39 +59,60 @@ func kpath(key, keytail string) string {
 
 // Helper for validating that a value has been passed exactly once, and that the
 // user is not attempting to nest on the key.
-func primitive(tipe, key, keytail string, values []string) {
+func primitive(key, keytail string, tipe reflect.Type, values []string) {
 	if keytail != "" {
-		perr("expected %s for key %q, got nested value", tipe,
-			kpath(key, keytail))
+		panic(NestingError{
+			Key:     kpath(key, keytail),
+			Type:    tipe,
+			Nesting: keytail,
+		})
 	}
 	if len(values) != 1 {
-		perr("expected %s for key %q, but key passed %v times", tipe,
-			kpath(key, keytail), len(values))
+		panic(SingletonError{
+			Key:    kpath(key, keytail),
+			Type:   tipe,
+			Values: values,
+		})
 	}
 }
 
 func keyed(tipe reflect.Type, key, keytail string) (string, string) {
-	idx := strings.IndexRune(keytail, ']')
-	if keytail[0] != '[' || idx == -1 {
-		perr("expected a square bracket delimited index for %q "+
-			"(of type %v)", kpath(key, keytail), tipe)
+	if keytail[0] != '[' {
+		panic(SyntaxError{
+			Key:       kpath(key, keytail),
+			Subtype:   MissingOpeningBrace,
+			ErrorPart: keytail,
+		})
 	}
+
+	idx := strings.IndexRune(keytail, ']')
+	if idx == -1 {
+		panic(SyntaxError{
+			Key:       kpath(key, keytail),
+			Subtype:   MissingClosingBrace,
+			ErrorPart: keytail[1:],
+		})
+	}
+
 	return keytail[1:idx], keytail[idx+1:]
 }
 
 func parseTextUnmarshaler(key, keytail string, values []string, target reflect.Value) {
-	primitive("encoding.TextUnmarshaler", key, keytail, values)
+	primitive(key, keytail, target.Type(), values)
 
 	tu := target.Addr().Interface().(encoding.TextUnmarshaler)
 	err := tu.UnmarshalText([]byte(values[0]))
 	if err != nil {
-		perr("error while calling UnmarshalText on %v for key %q: %v",
-			target.Type(), kpath(key, keytail), err)
+		panic(TypeError{
+			Key:  kpath(key, keytail),
+			Type: target.Type(),
+			Err:  err,
+		})
 	}
 }
 
 func parseBool(key, keytail string, values []string, target reflect.Value) {
-	primitive("bool", key, keytail, values)
+	primitive(key, keytail, target.Type(), values)
 
 	switch values[0] {
 	case "true", "1", "on":
@@ -99,61 +120,77 @@ func parseBool(key, keytail string, values []string, target reflect.Value) {
 	case "false", "0", "":
 		target.SetBool(false)
 	default:
-		perr("could not parse key %q as bool", kpath(key, keytail))
+		panic(TypeError{
+			Key:  kpath(key, keytail),
+			Type: target.Type(),
+		})
 	}
 }
 
 func parseInt(key, keytail string, values []string, target reflect.Value) {
-	primitive("int", key, keytail, values)
-
 	t := target.Type()
+	primitive(key, keytail, t, values)
+
 	i, err := strconv.ParseInt(values[0], 10, t.Bits())
 	if err != nil {
-		perr("error parsing key %q as int: %v", kpath(key, keytail),
-			err)
+		panic(TypeError{
+			Key:  kpath(key, keytail),
+			Type: t,
+			Err:  err,
+		})
 	}
 	target.SetInt(i)
 }
 
 func parseUint(key, keytail string, values []string, target reflect.Value) {
-	primitive("uint", key, keytail, values)
-
 	t := target.Type()
+	primitive(key, keytail, t, values)
+
 	i, err := strconv.ParseUint(values[0], 10, t.Bits())
 	if err != nil {
-		perr("error parsing key %q as uint: %v", kpath(key, keytail),
-			err)
+		panic(TypeError{
+			Key:  kpath(key, keytail),
+			Type: t,
+			Err:  err,
+		})
 	}
 	target.SetUint(i)
 }
 
 func parseFloat(key, keytail string, values []string, target reflect.Value) {
-	primitive("float", key, keytail, values)
-
 	t := target.Type()
+	primitive(key, keytail, t, values)
+
 	f, err := strconv.ParseFloat(values[0], t.Bits())
 	if err != nil {
-		perr("error parsing key %q as float: %v", kpath(key, keytail),
-			err)
+		panic(TypeError{
+			Key:  kpath(key, keytail),
+			Type: t,
+			Err:  err,
+		})
 	}
 
 	target.SetFloat(f)
 }
 
 func parseString(key, keytail string, values []string, target reflect.Value) {
-	primitive("string", key, keytail, values)
+	primitive(key, keytail, target.Type(), values)
 
 	target.SetString(values[0])
 }
 
 func parseSlice(key, keytail string, values []string, target reflect.Value) {
+	t := target.Type()
+
 	// BUG(carl): We currently do not handle slices of nested types. If
 	// support is needed, the implementation probably could be fleshed out.
 	if keytail != "[]" {
-		perr("unexpected array nesting for key %q: %q",
-			kpath(key, keytail), keytail)
+		panic(NestingError{
+			Key:     kpath(key, keytail),
+			Type:    t,
+			Nesting: keytail,
+		})
 	}
-	t := target.Type()
 
 	slice := reflect.MakeSlice(t, len(values), len(values))
 	kp := kpath(key, keytail)
