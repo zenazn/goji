@@ -80,7 +80,7 @@ func keyed(tipe reflect.Type, key, keytail string) (string, string) {
 	if keytail[0] != '[' {
 		panic(SyntaxError{
 			Key:       kpath(key, keytail),
-			Subtype:   MissingOpeningBrace,
+			Subtype:   MissingOpeningBracket,
 			ErrorPart: keytail,
 		})
 	}
@@ -89,7 +89,7 @@ func keyed(tipe reflect.Type, key, keytail string) (string, string) {
 	if idx == -1 {
 		panic(SyntaxError{
 			Key:       kpath(key, keytail),
-			Subtype:   MissingClosingBrace,
+			Subtype:   MissingClosingBracket,
 			ErrorPart: keytail[1:],
 		})
 	}

@@ -63,8 +63,8 @@ func (n NestingError) Error() string {
 type SyntaxErrorSubtype int
 
 const (
-	MissingOpeningBrace SyntaxErrorSubtype = iota + 1
-	MissingClosingBrace
+	MissingOpeningBracket SyntaxErrorSubtype = iota + 1
+	MissingClosingBracket
 )
 
 // SyntaxError is an error type returned when a key is incorrectly formatted.
@@ -83,11 +83,11 @@ func (s SyntaxError) Error() string {
 		s.Key)
 
 	switch s.Subtype {
-	case MissingOpeningBrace:
-		return prefix + fmt.Sprintf("expected opening brace, got %q",
+	case MissingOpeningBracket:
+		return prefix + fmt.Sprintf("expected opening bracket, got %q",
 			s.ErrorPart)
-	case MissingClosingBrace:
-		return prefix + fmt.Sprintf("expected closing brace in %q",
+	case MissingClosingBracket:
+		return prefix + fmt.Sprintf("expected closing bracket in %q",
 			s.ErrorPart)
 	default:
 		panic("switch is not exhaustive!")
