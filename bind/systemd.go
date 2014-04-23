@@ -2,7 +2,6 @@ package bind
 
 import (
 	"os"
-	"syscall"
 )
 
 const systemdMinFd = 3
@@ -25,7 +24,7 @@ func systemdInit() {
 
 	// Prevent fds from leaking to our children
 	for i := 0; i < systemdNumFds; i++ {
-		syscall.CloseOnExec(systemdMinFd + i)
+		closeOnExec(systemdMinFd + i)
 	}
 }
 

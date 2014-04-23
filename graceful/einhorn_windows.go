@@ -1,12 +1,8 @@
-// +build !windows
-
 package graceful
 
 import (
-	"log"
 	"os"
 	"strconv"
-	"syscall"
 )
 
 func init() {
@@ -18,7 +14,4 @@ func init() {
 	if err != nil || mpid != os.Getppid() {
 		return
 	}
-
-	log.Print("graceful: Einhorn detected, adding SIGUSR2 handler")
-	AddSignal(syscall.SIGUSR2)
 }
