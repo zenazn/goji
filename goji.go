@@ -30,6 +30,8 @@ A side effect of this package's ease-of-use is the fact that it is opinionated.
 If you don't like (or have outgrown) its opinions, it should be straightforward
 to use the APIs of goji's subpackages to reimplement things to your liking. Both
 methods of using this library are equally well supported.
+
+Goji requires Go 1.2 or newer.
 */
 package goji
 
