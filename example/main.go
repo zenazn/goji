@@ -14,9 +14,9 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/param"
-	"github.com/zenazn/goji/web"
+	"github.com/a-palchikov/goji"
+	"github.com/a-palchikov/goji/param"
+	"github.com/a-palchikov/goji/web"
 )
 
 // Note: the code below cuts a lot of corners to make the example app simple.
