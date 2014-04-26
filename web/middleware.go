@@ -22,10 +22,23 @@ type mStack struct {
 	router Handler
 }
 
-// Constructing a middleware stack involves a lot of allocations: at the very
-// least each layer will have to close over the layer after (inside) it, and
-// perhaps a context object. Instead of doing this on every request, let's cache
-// fully assembled middleware stacks (the "c" stands for "cached").
+/*
+Constructing a middleware stack involves a lot of allocations: at the very least
+each layer will have to close over the layer after (inside) it, and perhaps a
+context object. Instead of doing this on every request, let's cache fully
+assembled middleware stacks (the "c" stands for "cached").
+
+A lot of the complexity here (in particular the "pool" parameter, and the
+behavior of release() and invalidate() below) is due to the fact that when the
+middleware stack is mutated we need to create a "cache barrier," where no
+cStack created before the middleware stack mutation is returned to the active
+cache pool (and is therefore eligible for subsequent reuse). The way we do this
+is a bit ugly: each cStack maintains a pointer to the pool it originally came
+from, and will only return itself to that pool. If the mStack's pool has been
+rotated since then (meaning that this cStack is invalid), it will either try
+(and likely fail) to insert itself into the stale pool, or it will drop the
+cStack on the floor.
+*/
 type cStack struct {
 	C
 	m    http.Handler
