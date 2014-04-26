@@ -181,8 +181,7 @@ func (m *mStack) Abandon(middleware interface{}) error {
 		return fmt.Errorf("web: unknown middleware %v", middleware)
 	}
 
-	copy(m.stack[i:], m.stack[i+1:])
-	m.stack = m.stack[:len(m.stack)-1 : len(m.stack)]
+	m.stack = m.stack[:i+copy(m.stack[i:], m.stack[i+1:])]
 
 	m.invalidate()
 	return nil
