@@ -132,6 +132,93 @@ func TestHandlerTypes(t *testing.T) {
 	}
 }
 
+// The idea behind this test is to comprehensively test if routes are being
+// applied in the right order. We define a special pattern type that always
+// matches so long as it's greater than or equal to the global test index. By
+// incrementing this index, we can invalidate all routes up to some point, and
+// therefore test the routing guarantee that Goji provides: for any path P, if
+// both A and B match P, and if A was inserted before B, then Goji will route to
+// A before it routes to B.
+var rsRoutes = []string{
+	"/",
+	"/a",
+	"/a",
+	"/b",
+	"/ab",
+	"/",
+	"/ba",
+	"/b",
+	"/a",
+}
+
+var rsTests = []struct {
+	key     string
+	results []int
+}{
+	{"/", []int{0, 5, 5, 5, 5, 5, -1, -1, -1, -1}},
+	{"/a", []int{0, 1, 2, 5, 5, 5, 8, 8, 8, -1}},
+	{"/b", []int{0, 3, 3, 3, 5, 5, 7, 7, -1, -1}},
+	{"/ab", []int{0, 1, 2, 4, 4, 5, 8, 8, 8, -1}},
+	{"/ba", []int{0, 3, 3, 3, 5, 5, 6, 7, -1, -1}},
+	{"/c", []int{0, 5, 5, 5, 5, 5, -1, -1, -1, -1}},
+	{"nope", []int{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1}},
+}
+
+type rsPattern struct {
+	i       int
+	counter *int
+	prefix  string
+	ichan   chan int
+}
+
+func (rs rsPattern) Prefix() string {
+	return rs.prefix
+}
+func (rs rsPattern) Match(_ *http.Request, _ *C, _ bool) bool {
+	return rs.i >= *rs.counter
+}
+
+func (rs rsPattern) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {
+	rs.ichan <- rs.i
+}
+
+var _ Pattern = rsPattern{}
+var _ http.Handler = rsPattern{}
+
+func TestRouteSelection(t *testing.T) {
+	t.Parallel()
+	rt := makeRouter()
+	counter := 0
+	ichan := make(chan int, 1)
+	rt.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		ichan <- -1
+	})
+
+	for i, s := range rsRoutes {
+		pat := rsPattern{
+			i:       i,
+			counter: &counter,
+			prefix:  s,
+			ichan:   ichan,
+		}
+		rt.Get(pat, pat)
+	}
+
+	for _, test := range rsTests {
+		var n int
+		for counter, n = range test.results {
+			r, _ := http.NewRequest("GET", test.key, nil)
+			w := httptest.NewRecorder()
+			rt.route(C{}, w, r)
+			actual := <-ichan
+			if n != actual {
+				t.Errorf("Expected %q @ %d to be %d, got %d",
+					test.key, counter, n, actual)
+			}
+		}
+	}
+}
+
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 	rt := makeRouter()
