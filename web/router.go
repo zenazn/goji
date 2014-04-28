@@ -184,17 +184,35 @@ func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {
 }
 
 func (rt *router) handle(p Pattern, m method, h Handler) {
-	// We're being a little sloppy here: we assume that pointer assignments
-	// are atomic, and that there is no way a locked append here can affect
-	// another goroutine which looked at rt.routes without a lock.
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
-	rt.routes = append(rt.routes, route{
-		prefix:  p.Prefix(),
+
+	// Calculate the sorted insertion point, because there's no reason to do
+	// swapping hijinks if we're already making a copy. We need to use
+	// bubble sort because we can only compare adjacent elements.
+	pp := p.Prefix()
+	var i int
+	for i = len(rt.routes); i > 0; i-- {
+		rip := rt.routes[i-1].prefix
+		if rip <= pp || strings.HasPrefix(rip, pp) {
+			break
+		}
+	}
+
+	newRoutes := make([]route, len(rt.routes)+1)
+	copy(newRoutes, rt.routes[:i])
+	newRoutes[i] = route{
+		prefix:  pp,
 		method:  m,
 		pattern: p,
 		handler: h,
-	})
+	}
+	copy(newRoutes[i+1:], rt.routes[i:])
+
+	// We're being a bit sloppy here: we assume that pointer assignment is
+	// atomic with respect to other agents that don't acquire the lock. We
+	// should really just give up and use sync/atomic for this.
+	rt.routes = newRoutes
 }
 
 // This is a bit silly, but I've renamed the method receivers in the public
