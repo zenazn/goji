@@ -1,6 +1,7 @@
 package graceful
 
 import (
+	"log"
 	"os"
 	"strconv"
 )
@@ -14,4 +15,6 @@ func init() {
 	if err != nil || mpid != os.Getppid() {
 		return
 	}
+
+	log.Print("graceful: Einhorn detected, but won't work on windows")
 }
