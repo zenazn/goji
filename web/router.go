@@ -59,6 +59,7 @@ type router struct {
 	lock     sync.Mutex
 	routes   []route
 	notFound Handler
+	machine  *routeMachine
 }
 
 // A Pattern determines whether or not a given request matches some criteria.
@@ -137,22 +138,96 @@ func httpMethod(mname string) method {
 	return mIDK
 }
 
-func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
+type routeMachine struct {
+	sm     stateMachine
+	routes []route
+}
+
+func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
+	if !route.pattern.Match(r, c, false) {
+		return false
+	}
+
+	if route.method&m != 0 {
+		return true
+	} else {
+		*ms |= route.method
+		return false
+	}
+}
+
+func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, bool) {
 	m := httpMethod(r.Method)
 	var methods method
-	for _, route := range rt.routes {
-		if !strings.HasPrefix(r.URL.Path, route.prefix) ||
-			!route.pattern.Match(r, &c, false) {
+	p := r.URL.Path
 
+	if len(rm.sm) == 0 {
+		return methods, false
+	}
+
+	var i int
+	for {
+		s := rm.sm[i]
+		if s.mode&smSetCursor != 0 {
+			p = r.URL.Path[s.i:]
+			i++
 			continue
 		}
 
-		if route.method&m != 0 {
-			route.handler.ServeHTTPC(c, w, r)
-			return
-		} else if route.pattern.Match(r, &c, true) {
-			methods |= route.method
+		length := int(s.mode & smLengthMask)
+		match := length <= len(p)
+		for j := 0; match && j < length; j++ {
+			match = match && p[j] == s.bs[j]
 		}
+
+		if match {
+			p = p[length:]
+		}
+
+		if match && s.mode&smRoute != 0 {
+			if matchRoute(rm.routes[s.i], m, &methods, r, c) {
+				rm.routes[s.i].handler.ServeHTTPC(*c, w, r)
+				return 0, true
+			} else {
+				i++
+			}
+		} else if (match && s.mode&smJumpOnMatch != 0) ||
+			(!match && s.mode&smJumpOnMatch == 0) {
+
+			if s.mode&smFail != 0 {
+				return methods, false
+			}
+			i = int(s.i)
+		} else {
+			i++
+		}
+	}
+
+	return methods, false
+}
+
+// Compile the list of routes into bytecode. This only needs to be done once
+// after all the routes have been added, and will be called automatically for
+// you (at some performance cost on the first request) if you do not call it
+// explicitly.
+func (rt *router) Compile() {
+	rt.lock.Lock()
+	defer rt.lock.Unlock()
+	sm := routeMachine{
+		sm:     compile(rt.routes),
+		routes: rt.routes,
+	}
+	rt.setMachine(&sm)
+}
+
+func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
+	if rt.machine == nil {
+		rt.Compile()
+	}
+
+	methods, ok := rt.getMachine().route(&c, w, r)
+	if ok {
+		return
 	}
 
 	if methods == 0 {
@@ -209,9 +284,7 @@ func (rt *router) handle(p Pattern, m method, h Handler) {
 	}
 	copy(newRoutes[i+1:], rt.routes[i:])
 
-	// We're being a bit sloppy here: we assume that pointer assignment is
-	// atomic with respect to other agents that don't acquire the lock. We
-	// should really just give up and use sync/atomic for this.
+	rt.setMachine(nil)
 	rt.routes = newRoutes
 }
 
