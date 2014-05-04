@@ -144,16 +144,15 @@ type routeMachine struct {
 }
 
 func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
-	if !route.pattern.Match(r, c, false) {
+	if !route.pattern.Match(r, c, true) {
 		return false
 	}
+	*ms |= route.method
 
 	if route.method&m != 0 {
-		return true
-	} else {
-		*ms |= route.method
-		return false
+		return route.pattern.Match(r, c, false)
 	}
+	return false
 }
 
 func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, bool) {
