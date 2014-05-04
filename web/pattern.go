@@ -151,7 +151,10 @@ func (s stringPattern) Prefix() string {
 
 func (s stringPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 	path := r.URL.Path
-	matches := make([]string, len(s.pats))
+	var matches map[string]string
+	if !dryrun && len(s.pats) > 0 {
+		matches = make(map[string]string, len(s.pats))
+	}
 	for i := 0; i < len(s.pats); i++ {
 		if !strings.HasPrefix(path, s.literals[i]) {
 			return false
@@ -167,7 +170,9 @@ func (s stringPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 			// "/:foo" would match the path "/"
 			return false
 		}
-		matches[i] = path[:m]
+		if !dryrun {
+			matches[s.pats[i]] = path[:m]
+		}
 		path = path[m:]
 	}
 	// There's exactly one more literal than pat.
@@ -185,11 +190,12 @@ func (s stringPattern) Match(r *http.Request, c *C, dryrun bool) bool {
 		return true
 	}
 
-	if c.URLParams == nil && len(matches) > 0 {
-		c.URLParams = make(map[string]string, len(matches)-1)
-	}
-	for i, match := range matches {
-		c.URLParams[s.pats[i]] = match
+	if c.URLParams == nil {
+		c.URLParams = matches
+	} else {
+		for k, v := range matches {
+			c.URLParams[k] = v
+		}
 	}
 	return true
 }
