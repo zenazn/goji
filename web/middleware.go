@@ -82,12 +82,7 @@ func (m *mStack) findLayer(l interface{}) int {
 }
 
 func (m *mStack) invalidate() {
-	old := m.pool
 	m.pool = make(chan *cStack, mPoolSize)
-	close(old)
-	// Bleed down the old pool so it gets GC'd
-	for _ = range old {
-	}
 }
 
 func (m *mStack) newStack() *cStack {
@@ -134,13 +129,6 @@ func (m *mStack) release(cs *cStack) {
 	if cs.pool != m.pool {
 		return
 	}
-	// It's possible that the pool has been invalidated (and closed) between
-	// the check above and now, in which case we'll start panicing, which is
-	// dumb. I'm not sure this is actually better than just grabbing a lock,
-	// but whatever.
-	defer func() {
-		recover()
-	}()
 	select {
 	case cs.pool <- cs:
 	default:
