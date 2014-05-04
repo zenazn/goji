@@ -85,45 +85,30 @@ func permuteRequests(reqs []*http.Request) []*http.Request {
 	return out
 }
 
-func testingMux(n int) (*Mux, []*http.Request) {
+func benchN(b *testing.B, n int) {
 	m := New()
 	prefixes := genPrefixes(n)
 	for _, prefix := range prefixes {
 		addRoutes(m, prefix)
 	}
 	reqs := permuteRequests(genRequests(prefixes))
-	return m, reqs
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		m.ServeHTTP(w, reqs[i%len(reqs)])
+	}
 }
 
 func BenchmarkRoute5(b *testing.B) {
-	m, reqs := testingMux(1)
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, reqs[i%len(reqs)])
-	}
+	benchN(b, 1)
 }
 func BenchmarkRoute50(b *testing.B) {
-	m, reqs := testingMux(10)
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, reqs[i%len(reqs)])
-	}
+	benchN(b, 10)
 }
 func BenchmarkRoute500(b *testing.B) {
-	m, reqs := testingMux(100)
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, reqs[i%len(reqs)])
-	}
+	benchN(b, 100)
 }
 func BenchmarkRoute5000(b *testing.B) {
-	m, reqs := testingMux(1000)
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, reqs[i%len(reqs)])
-	}
+	benchN(b, 1000)
 }
