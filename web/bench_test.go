@@ -6,12 +6,7 @@ import (
 	mrand "math/rand"
 	"net/http"
 	"testing"
-	"time"
 )
-
-func init() {
-	mrand.Seed(time.Now().Unix())
-}
 
 /*
 The core benchmarks here are based on cypriss's mux benchmarks, which can be
@@ -38,6 +33,13 @@ func (_ nilResponse) Header() http.Header {
 	return nil
 }
 func (_ nilResponse) WriteHeader(code int) {
+}
+
+func trivialMiddleware(h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
 }
 
 var w nilResponse
@@ -100,6 +102,33 @@ func benchN(b *testing.B, n int) {
 	}
 }
 
+func benchM(b *testing.B, n int) {
+	m := New()
+	m.Get("/", nilRouter{})
+	for i := 0; i < n; i++ {
+		m.Use(trivialMiddleware)
+	}
+	r, _ := http.NewRequest("GET", "/", nil)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		m.ServeHTTP(w, r)
+	}
+}
+
+func BenchmarkStatic(b *testing.B) {
+	m := New()
+	m.Get("/", nilRouter{})
+	r, _ := http.NewRequest("GET", "/", nil)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		m.ServeHTTP(w, r)
+	}
+}
+
 func BenchmarkRoute5(b *testing.B) {
 	benchN(b, 1)
 }
@@ -111,4 +140,14 @@ func BenchmarkRoute500(b *testing.B) {
 }
 func BenchmarkRoute5000(b *testing.B) {
 	benchN(b, 1000)
+}
+
+func BenchmarkMiddleware1(b *testing.B) {
+	benchM(b, 1)
+}
+func BenchmarkMiddleware10(b *testing.B) {
+	benchM(b, 10)
+}
+func BenchmarkMiddleware100(b *testing.B) {
+	benchM(b, 100)
 }
