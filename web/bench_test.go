@@ -98,6 +98,7 @@ func testingMux(n int) (*Mux, []*http.Request) {
 func BenchmarkRoute5(b *testing.B) {
 	m, reqs := testingMux(1)
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m.ServeHTTP(w, reqs[i%len(reqs)])
 	}
@@ -105,6 +106,7 @@ func BenchmarkRoute5(b *testing.B) {
 func BenchmarkRoute50(b *testing.B) {
 	m, reqs := testingMux(10)
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m.ServeHTTP(w, reqs[i%len(reqs)])
 	}
@@ -112,6 +114,7 @@ func BenchmarkRoute50(b *testing.B) {
 func BenchmarkRoute500(b *testing.B) {
 	m, reqs := testingMux(100)
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m.ServeHTTP(w, reqs[i%len(reqs)])
 	}
@@ -119,6 +122,7 @@ func BenchmarkRoute500(b *testing.B) {
 func BenchmarkRoute5000(b *testing.B) {
 	m, reqs := testingMux(1000)
 	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m.ServeHTTP(w, reqs[i%len(reqs)])
 	}
