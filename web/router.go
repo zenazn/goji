@@ -219,18 +219,18 @@ func (rt *router) Compile() {
 	rt.setMachine(&sm)
 }
 
-func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
+func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
 	if rt.machine == nil {
 		rt.Compile()
 	}
 
-	methods, ok := rt.getMachine().route(&c, w, r)
+	methods, ok := rt.getMachine().route(c, w, r)
 	if ok {
 		return
 	}
 
 	if methods == 0 {
-		rt.notFound.ServeHTTPC(c, w, r)
+		rt.notFound.ServeHTTPC(*c, w, r)
 		return
 	}
 
@@ -249,7 +249,7 @@ func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 	} else {
 		c.Env[ValidMethodsKey] = methodsList
 	}
-	rt.notFound.ServeHTTPC(c, w, r)
+	rt.notFound.ServeHTTPC(*c, w, r)
 }
 
 func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {

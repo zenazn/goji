@@ -19,7 +19,11 @@ type mStack struct {
 	lock   sync.Mutex
 	stack  []mLayer
 	pool   chan *cStack
-	router Handler
+	router internalRouter
+}
+
+type internalRouter interface {
+	route(*C, http.ResponseWriter, *http.Request)
 }
 
 /*
@@ -93,7 +97,7 @@ func (m *mStack) newStack() *cStack {
 	router := m.router
 
 	cs.m = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		router.ServeHTTPC(cs.C, w, r)
+		router.route(&cs.C, w, r)
 	})
 	for i := len(m.stack) - 1; i >= 0; i-- {
 		cs.m = m.stack[i].fn(&cs.C, cs.m)

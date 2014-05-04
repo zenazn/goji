@@ -46,7 +46,7 @@ func TestMethods(t *testing.T) {
 	for _, method := range methods {
 		r, _ := http.NewRequest(method, "/", nil)
 		w := httptest.NewRecorder()
-		rt.route(C{}, w, r)
+		rt.route(&C{}, w, r)
 		select {
 		case val := <-ch:
 			if val != method {
@@ -119,7 +119,7 @@ func TestHandlerTypes(t *testing.T) {
 	for route, response := range testHandlerTable {
 		r, _ := http.NewRequest("GET", route, nil)
 		w := httptest.NewRecorder()
-		rt.route(C{}, w, r)
+		rt.route(&C{}, w, r)
 		select {
 		case resp := <-ch:
 			if resp != response {
@@ -209,7 +209,7 @@ func TestRouteSelection(t *testing.T) {
 		for counter, n = range test.results {
 			r, _ := http.NewRequest("GET", test.key, nil)
 			w := httptest.NewRecorder()
-			rt.route(C{}, w, r)
+			rt.route(&C{}, w, r)
 			actual := <-ichan
 			if n != actual {
 				t.Errorf("Expected %q @ %d to be %d, got %d",
@@ -225,7 +225,7 @@ func TestNotFound(t *testing.T) {
 
 	r, _ := http.NewRequest("post", "/", nil)
 	w := httptest.NewRecorder()
-	rt.route(C{}, w, r)
+	rt.route(&C{}, w, r)
 	if w.Code != 404 {
 		t.Errorf("Expected 404, got %d", w.Code)
 	}
@@ -236,7 +236,7 @@ func TestNotFound(t *testing.T) {
 
 	r, _ = http.NewRequest("POST", "/", nil)
 	w = httptest.NewRecorder()
-	rt.route(C{}, w, r)
+	rt.route(&C{}, w, r)
 	if w.Code != http.StatusTeapot {
 		t.Errorf("Expected a teapot, got %d", w.Code)
 	}
@@ -253,7 +253,7 @@ func TestPrefix(t *testing.T) {
 
 	r, _ := http.NewRequest("GET", "/hello/world", nil)
 	w := httptest.NewRecorder()
-	rt.route(C{}, w, r)
+	rt.route(&C{}, w, r)
 	select {
 	case val := <-ch:
 		if val != "/hello/world" {
@@ -302,7 +302,7 @@ func TestValidMethods(t *testing.T) {
 
 	for path, eMethods := range validMethodsTable {
 		r, _ := http.NewRequest("BOGUS", path, nil)
-		rt.route(C{}, httptest.NewRecorder(), r)
+		rt.route(&C{}, httptest.NewRecorder(), r)
 		aMethods := <-ch
 		if !reflect.DeepEqual(eMethods, aMethods) {
 			t.Errorf("For %q, expected %v, got %v", path, eMethods,

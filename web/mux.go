@@ -68,7 +68,7 @@ func New() *Mux {
 			notFound: parseHandler(http.NotFound),
 		},
 	}
-	mux.mStack.router = HandlerFunc(mux.router.route)
+	mux.mStack.router = &mux.router
 	return &mux
 }
 
