@@ -68,22 +68,20 @@ func New() *Mux {
 			notFound: parseHandler(http.NotFound),
 		},
 	}
-	mux.mStack.router = HandlerFunc(mux.router.route)
+	mux.mStack.router = &mux.router
 	return &mux
 }
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
-	defer m.mStack.release(stack)
-
 	stack.ServeHTTP(w, r)
+	m.mStack.release(stack)
 }
 
 // ServeHTTPC creates a context dependent request with the given Mux. Satisfies
 // the web.Handler interface.
 func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
-	defer m.mStack.release(stack)
-
 	stack.ServeHTTPC(c, w, r)
+	m.mStack.release(stack)
 }

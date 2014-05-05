@@ -59,6 +59,7 @@ type router struct {
 	lock     sync.Mutex
 	routes   []route
 	notFound Handler
+	machine  *routeMachine
 }
 
 // A Pattern determines whether or not a given request matches some criteria.
@@ -77,10 +78,13 @@ type Pattern interface {
 	Prefix() string
 	// Returns true if the request satisfies the pattern. This function is
 	// free to examine both the request and the context to make this
-	// decision. After it is certain that the request matches, this function
-	// should mutate or create c.URLParams if necessary, unless dryrun is
-	// set.
-	Match(r *http.Request, c *C, dryrun bool) bool
+	// decision. Match should not modify either argument, and since it will
+	// potentially be called several times over the course of matching a
+	// request, it should be reasonably efficient.
+	Match(r *http.Request, c *C) bool
+	// Run the pattern on the request and context, modifying the context as
+	// necessary to bind URL parameters or other parsed state.
+	Run(r *http.Request, c *C)
 }
 
 func parsePattern(p interface{}) Pattern {
@@ -137,26 +141,100 @@ func httpMethod(mname string) method {
 	return mIDK
 }
 
-func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
+type routeMachine struct {
+	sm     stateMachine
+	routes []route
+}
+
+func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
+	if !route.pattern.Match(r, c) {
+		return false
+	}
+	*ms |= route.method
+
+	if route.method&m != 0 {
+		route.pattern.Run(r, c)
+		return true
+	}
+	return false
+}
+
+func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, bool) {
 	m := httpMethod(r.Method)
 	var methods method
-	for _, route := range rt.routes {
-		if !strings.HasPrefix(r.URL.Path, route.prefix) ||
-			!route.pattern.Match(r, &c, false) {
+	p := r.URL.Path
 
+	if len(rm.sm) == 0 {
+		return methods, false
+	}
+
+	var i int
+	for {
+		s := rm.sm[i]
+		if s.mode&smSetCursor != 0 {
+			p = r.URL.Path[s.i:]
+			i++
 			continue
 		}
 
-		if route.method&m != 0 {
-			route.handler.ServeHTTPC(c, w, r)
-			return
-		} else if route.pattern.Match(r, &c, true) {
-			methods |= route.method
+		length := int(s.mode & smLengthMask)
+		match := length <= len(p)
+		for j := 0; match && j < length; j++ {
+			match = match && p[j] == s.bs[j]
+		}
+
+		if match {
+			p = p[length:]
+		}
+
+		if match && s.mode&smRoute != 0 {
+			if matchRoute(rm.routes[s.i], m, &methods, r, c) {
+				rm.routes[s.i].handler.ServeHTTPC(*c, w, r)
+				return 0, true
+			} else {
+				i++
+			}
+		} else if (match && s.mode&smJumpOnMatch != 0) ||
+			(!match && s.mode&smJumpOnMatch == 0) {
+
+			if s.mode&smFail != 0 {
+				return methods, false
+			}
+			i = int(s.i)
+		} else {
+			i++
 		}
 	}
 
+	return methods, false
+}
+
+// Compile the list of routes into bytecode. This only needs to be done once
+// after all the routes have been added, and will be called automatically for
+// you (at some performance cost on the first request) if you do not call it
+// explicitly.
+func (rt *router) Compile() {
+	rt.lock.Lock()
+	defer rt.lock.Unlock()
+	sm := routeMachine{
+		sm:     compile(rt.routes),
+		routes: rt.routes,
+	}
+	rt.setMachine(&sm)
+}
+
+func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
+	if rt.machine == nil {
+		rt.Compile()
+	}
+
+	methods, ok := rt.getMachine().route(c, w, r)
+	if ok {
+		return
+	}
+
 	if methods == 0 {
-		rt.notFound.ServeHTTPC(c, w, r)
+		rt.notFound.ServeHTTPC(*c, w, r)
 		return
 	}
 
@@ -175,7 +253,7 @@ func (rt *router) route(c C, w http.ResponseWriter, r *http.Request) {
 	} else {
 		c.Env[ValidMethodsKey] = methodsList
 	}
-	rt.notFound.ServeHTTPC(c, w, r)
+	rt.notFound.ServeHTTPC(*c, w, r)
 }
 
 func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {
@@ -184,17 +262,33 @@ func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {
 }
 
 func (rt *router) handle(p Pattern, m method, h Handler) {
-	// We're being a little sloppy here: we assume that pointer assignments
-	// are atomic, and that there is no way a locked append here can affect
-	// another goroutine which looked at rt.routes without a lock.
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
-	rt.routes = append(rt.routes, route{
-		prefix:  p.Prefix(),
+
+	// Calculate the sorted insertion point, because there's no reason to do
+	// swapping hijinks if we're already making a copy. We need to use
+	// bubble sort because we can only compare adjacent elements.
+	pp := p.Prefix()
+	var i int
+	for i = len(rt.routes); i > 0; i-- {
+		rip := rt.routes[i-1].prefix
+		if rip <= pp || strings.HasPrefix(rip, pp) {
+			break
+		}
+	}
+
+	newRoutes := make([]route, len(rt.routes)+1)
+	copy(newRoutes, rt.routes[:i])
+	newRoutes[i] = route{
+		prefix:  pp,
 		method:  m,
 		pattern: p,
 		handler: h,
-	})
+	}
+	copy(newRoutes[i+1:], rt.routes[i:])
+
+	rt.setMachine(nil)
+	rt.routes = newRoutes
 }
 
 // This is a bit silly, but I've renamed the method receivers in the public

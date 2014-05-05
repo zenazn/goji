@@ -1,7 +1,7 @@
 Goji [![GoDoc](https://godoc.org/github.com/zenazn/goji?status.png)](https://godoc.org/github.com/zenazn/goji) [![Build Status](https://travis-ci.org/zenazn/goji.svg)](https://travis-ci.org/zenazn/goji)
 ====
 
-Goji is a minimalistic web framework inspired by Sinatra.
+Goji is a minimalistic web framework that values composability and simplicity.
 
 Example
 -------
@@ -37,9 +37,10 @@ Features
 --------
 
 * Compatible with `net/http`
-* URL patterns (both Sinatra style `/foo/:bar` patterns and regular expressions)
+* URL patterns (both Sinatra style `/foo/:bar` patterns and regular expressions,
+  as well as [custom patterns][pattern])
 * Reconfigurable middleware stack
-* Context/environment objects threaded through middleware and handlers
+* Context/environment object threaded through middleware and handlers
 * Automatic support for [Einhorn][einhorn], systemd, and [more][bind]
 * [Graceful shutdown][graceful], and zero-downtime graceful reload when combined
   with Einhorn.
@@ -50,6 +51,7 @@ Features
 [bind]: http://godoc.org/github.com/zenazn/goji/bind
 [graceful]: http://godoc.org/github.com/zenazn/goji/graceful
 [param]: http://godoc.org/github.com/zenazn/goji/param
+[pattern]: https://godoc.org/github.com/zenazn/goji/web#Pattern
 
 
 Is it any good?
@@ -62,10 +64,10 @@ There are [plenty][revel] of [other][gorilla] [good][pat] [Go][martini]
 novel, nor is it uniquely good. The primary difference between Goji and other
 frameworks--and the primary reason I think Goji is any good--is its philosophy:
 
-Goji first of all attempts to be simple. It is of the Sinatra school of web
-framework design, and not the Rails one. If you want me to tell you what
-directory you should put your models in, or if you want built-in flash sessions,
-you won't have a good time with Goji.
+Goji first of all attempts to be simple. It is of the Sinatra and Flask school
+of web framework design, and not the Rails/Django one. If you want me to tell
+you what directory you should put your models in, or if you want built-in flash
+sessions, you won't have a good time with Goji.
 
 Secondly, Goji attempts to be composable. It is fully composable with net/http,
 and can be used as a `http.Handler`, or can serve arbitrary `http.Handler`s. At
@@ -101,28 +103,31 @@ motivations behind abandoning pat to write Goji.
 Is it fast?
 -----------
 
-It's not bad: in very informal tests it performed roughly in the middle of the
-pack of [one set of benchmarks][bench]. For almost all applications this means
-that it's fast enough that it doesn't matter.
+[Yeah][bench1], [it is][bench2]. Goji is among the fastest HTTP routers out
+there, and is very gentle on the garbage collector.
 
-I have very little interest in boosting Goji's router's benchmark scores. There
-is an obvious solution here--radix trees--and maybe if I get bored I'll
-implement one for Goji, but I think the API guarantees and conceptual simplicity
-Goji provides are more important (all routes are attempted, one after another,
-until a matching route is found). Even if I choose to optimize Goji's router,
-Goji's routing semantics will not change.
+But that's sort of missing the point. Almost all Go routers are fast enough for
+almost all purposes. In my opinion, what matters more is how simple and flexible
+the routing semantics are.
 
-Plus, Goji provides users with the ability to create their own radix trees: by
-using sub-routes you create a tree of routers and match routes in more or less
-the same way as a radix tree would. But, again, the real win here in my mind
-isn't the performance, but the separation of concerns you get from having your
-`/admin` routes and your `/profile` routes far, far away from each other.
+Goji provides results indistinguishable from naively trying routes one after
+another. This means that a route added before another route will be attempted
+before that route as well. This is perhaps the most simple and most intuitive
+interface a router can provide, and makes routes very easy to understand and
+debug.
 
-Goji's performance isn't all about the router though, it's also about allowing
-net/http to perform its built-in optimizations. Perhaps uniquely in the Go web
-framework ecosystem, Goji supports net/http's transparent `sendfile(2)` support.
+Goji's router is also very flexible: in addition to the standard Sinatra-style
+patterns and regular expression patterns, you can define [custom
+patterns][pattern] to perform whatever custom matching logic you desire. Custom
+patterns of course are fully compatible with the routing semantics above.
 
-[bench]: https://github.com/cypriss/golang-mux-benchmark/
+It's easy (and quite a bit of fun!) to get carried away by microbenchmarks, but
+at the end of the day you're not going to miss those extra hundred nanoseconds
+on a request. What matters is that you aren't compromising on the API for a
+handful of CPU cycles.
+
+[bench1]: https://gist.github.com/zenazn/c5c8528efe1a00634096
+[bench2]: https://github.com/zenazn/go-http-routing-benchmark
 
 
 Contributing

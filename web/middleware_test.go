@@ -7,14 +7,20 @@ import (
 	"time"
 )
 
+type iRouter func(*C, http.ResponseWriter, *http.Request)
+
+func (i iRouter) route(c *C, w http.ResponseWriter, r *http.Request) {
+	i(c, w, r)
+}
+
 func makeStack(ch chan string) *mStack {
-	router := func(c C, w http.ResponseWriter, r *http.Request) {
+	router := func(c *C, w http.ResponseWriter, r *http.Request) {
 		ch <- "router"
 	}
 	return &mStack{
 		stack:  make([]mLayer, 0),
 		pool:   make(chan *cStack, mPoolSize),
-		router: HandlerFunc(router),
+		router: iRouter(router),
 	}
 }
 
@@ -202,7 +208,7 @@ func TestInvalidation(t *testing.T) {
 }
 
 func TestContext(t *testing.T) {
-	router := func(c C, w http.ResponseWriter, r *http.Request) {
+	router := func(c *C, w http.ResponseWriter, r *http.Request) {
 		if c.Env["reqID"].(int) != 2 {
 			t.Error("Request id was not 2 :(")
 		}
@@ -210,7 +216,7 @@ func TestContext(t *testing.T) {
 	st := mStack{
 		stack:  make([]mLayer, 0),
 		pool:   make(chan *cStack, mPoolSize),
-		router: HandlerFunc(router),
+		router: iRouter(router),
 	}
 	st.Use(func(c *C, h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

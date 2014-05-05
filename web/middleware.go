@@ -19,13 +19,30 @@ type mStack struct {
 	lock   sync.Mutex
 	stack  []mLayer
 	pool   chan *cStack
-	router Handler
+	router internalRouter
 }
 
-// Constructing a middleware stack involves a lot of allocations: at the very
-// least each layer will have to close over the layer after (inside) it, and
-// perhaps a context object. Instead of doing this on every request, let's cache
-// fully assembled middleware stacks (the "c" stands for "cached").
+type internalRouter interface {
+	route(*C, http.ResponseWriter, *http.Request)
+}
+
+/*
+Constructing a middleware stack involves a lot of allocations: at the very least
+each layer will have to close over the layer after (inside) it, and perhaps a
+context object. Instead of doing this on every request, let's cache fully
+assembled middleware stacks (the "c" stands for "cached").
+
+A lot of the complexity here (in particular the "pool" parameter, and the
+behavior of release() and invalidate() below) is due to the fact that when the
+middleware stack is mutated we need to create a "cache barrier," where no
+cStack created before the middleware stack mutation is returned to the active
+cache pool (and is therefore eligible for subsequent reuse). The way we do this
+is a bit ugly: each cStack maintains a pointer to the pool it originally came
+from, and will only return itself to that pool. If the mStack's pool has been
+rotated since then (meaning that this cStack is invalid), it will either try
+(and likely fail) to insert itself into the stale pool, or it will drop the
+cStack on the floor.
+*/
 type cStack struct {
 	C
 	m    http.Handler
@@ -69,12 +86,7 @@ func (m *mStack) findLayer(l interface{}) int {
 }
 
 func (m *mStack) invalidate() {
-	old := m.pool
 	m.pool = make(chan *cStack, mPoolSize)
-	close(old)
-	// Bleed down the old pool so it gets GC'd
-	for _ = range old {
-	}
 }
 
 func (m *mStack) newStack() *cStack {
@@ -85,7 +97,7 @@ func (m *mStack) newStack() *cStack {
 	router := m.router
 
 	cs.m = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		router.ServeHTTPC(cs.C, w, r)
+		router.route(&cs.C, w, r)
 	})
 	for i := len(m.stack) - 1; i >= 0; i-- {
 		cs.m = m.stack[i].fn(&cs.C, cs.m)
@@ -121,13 +133,6 @@ func (m *mStack) release(cs *cStack) {
 	if cs.pool != m.pool {
 		return
 	}
-	// It's possible that the pool has been invalidated (and closed) between
-	// the check above and now, in which case we'll start panicing, which is
-	// dumb. I'm not sure this is actually better than just grabbing a lock,
-	// but whatever.
-	defer func() {
-		recover()
-	}()
 	select {
 	case cs.pool <- cs:
 	default:
