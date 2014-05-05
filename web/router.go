@@ -126,10 +126,10 @@ func parseHandler(h interface{}) Handler {
 		f := h.(func(w http.ResponseWriter, r *http.Request))
 		return netHTTPWrap{http.HandlerFunc(f)}
 	default:
-		log.Fatalf("Unknown handler type %v. Expected a web.Handler, "+
+		log.Fatalf("Unknown handler type %#v (%v - %T). Expected a web.Handler, "+
 			"a http.Handler, or a function with signature func(C, "+
 			"http.ResponseWriter, *http.Request) or "+
-			"func(http.ResponseWriter, http.Request)", h)
+			"func(http.ResponseWriter, http.Request)", h, h, h)
 	}
 	panic("log.Fatalf does not return")
 }

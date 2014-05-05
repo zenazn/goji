@@ -40,8 +40,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/zenazn/goji/bind"
-	"github.com/zenazn/goji/graceful"
+	"github.com/a-palchikov/goji/bind"
+	"github.com/a-palchikov/goji/graceful"
 )
 
 // Serve starts Goji using reasonable defaults.
