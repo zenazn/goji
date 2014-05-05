@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/a-palchikov/goji/web"
+	"github.com/zenazn/goji/web"
 )
 
 // Recoverer is a middleware that recovers from panics, logs the panic (and a
