@@ -78,10 +78,13 @@ type Pattern interface {
 	Prefix() string
 	// Returns true if the request satisfies the pattern. This function is
 	// free to examine both the request and the context to make this
-	// decision. After it is certain that the request matches, this function
-	// should mutate or create c.URLParams if necessary, unless dryrun is
-	// set.
-	Match(r *http.Request, c *C, dryrun bool) bool
+	// decision. Match should not modify either argument, and since it will
+	// potentially be called several times over the course of matching a
+	// request, it should be reasonably efficient.
+	Match(r *http.Request, c *C) bool
+	// Run the pattern on the request and context, modifying the context as
+	// necessary to bind URL parameters or other parsed state.
+	Run(r *http.Request, c *C)
 }
 
 func parsePattern(p interface{}) Pattern {
@@ -144,13 +147,14 @@ type routeMachine struct {
 }
 
 func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
-	if !route.pattern.Match(r, c, true) {
+	if !route.pattern.Match(r, c) {
 		return false
 	}
 	*ms |= route.method
 
 	if route.method&m != 0 {
-		return route.pattern.Match(r, c, false)
+		route.pattern.Run(r, c)
+		return true
 	}
 	return false
 }

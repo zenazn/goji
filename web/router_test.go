@@ -64,8 +64,10 @@ func (t testPattern) Prefix() string {
 	return ""
 }
 
-func (t testPattern) Match(r *http.Request, c *C, dryrun bool) bool {
+func (t testPattern) Match(r *http.Request, c *C) bool {
 	return true
+}
+func (t testPattern) Run(r *http.Request, c *C) {
 }
 
 var _ Pattern = testPattern{}
@@ -174,8 +176,10 @@ type rsPattern struct {
 func (rs rsPattern) Prefix() string {
 	return rs.prefix
 }
-func (rs rsPattern) Match(_ *http.Request, _ *C, _ bool) bool {
+func (rs rsPattern) Match(_ *http.Request, _ *C) bool {
 	return rs.i >= *rs.counter
+}
+func (rs rsPattern) Run(_ *http.Request, _ *C) {
 }
 
 func (rs rsPattern) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {
