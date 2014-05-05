@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"syscall"
 )
 
 const tooBigErr = "bind: einhorn@%d not found (einhorn only passed %d fds)"
@@ -37,7 +36,7 @@ func einhornInit() {
 	// Prevent einhorn's fds from leaking to our children
 	for i := 0; i < einhornNumFds; i++ {
 		fd := int(einhornFd(i).Fd())
-		syscall.CloseOnExec(fd)
+		closeOnExec(fd)
 	}
 }
 
