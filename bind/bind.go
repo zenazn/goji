@@ -41,10 +41,14 @@ func init() {
 	systemdInit()
 
 	defaultBind := ":8000"
-	if usingEinhorn() {
+	if bind := os.Getenv("GOJI_BIND"); bind != "" {
+		defaultBind = bind
+	} else if usingEinhorn() {
 		defaultBind = "einhorn@0"
 	} else if usingSystemd() {
 		defaultBind = "fd@3"
+	} else if port := os.Getenv("PORT"); port != "" {
+		defaultBind = ":" + port
 	}
 	flag.StringVar(&bind, "bind", defaultBind,
 		`Address to bind on. If this value has a colon, as in ":8000" or
