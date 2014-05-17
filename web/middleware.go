@@ -130,6 +130,7 @@ func (m *mStack) alloc() *cStack {
 }
 
 func (m *mStack) release(cs *cStack) {
+	cs.C = C{}
 	if cs.pool != m.pool {
 		return
 	}
