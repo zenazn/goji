@@ -1,13 +1,12 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 )
 
 // Unix epoch time
-var epoch = fmt.Sprintf("%s", time.Unix(0, 0).Format(time.RFC1123))
+var epoch = time.Unix(0, 0).Format(time.RFC1123)
 
 // Taken from https://github.com/mytrile/nocache
 var noCacheHeaders = map[string]string{
