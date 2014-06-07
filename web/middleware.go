@@ -110,7 +110,7 @@ func (m *mStack) alloc() *cStack {
 	// This is a little sloppy: this is only safe if this pointer
 	// dereference is atomic. Maybe someday I'll replace it with
 	// sync/atomic, but for now I happen to know that on all the
-	// architecures I care about it happens to be atomic.
+	// architectures I care about it happens to be atomic.
 	p := m.pool
 	var cs *cStack
 	select {
