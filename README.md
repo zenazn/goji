@@ -127,7 +127,7 @@ on a request. What matters is that you aren't compromising on the API for a
 handful of CPU cycles.
 
 [bench1]: https://gist.github.com/zenazn/c5c8528efe1a00634096
-[bench2]: https://github.com/zenazn/go-http-routing-benchmark
+[bench2]: https://github.com/julienschmidt/go-http-routing-benchmark
 
 
 Contributing
