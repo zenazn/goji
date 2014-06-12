@@ -65,6 +65,7 @@ func einhornBind(n int) (net.Listener, error) {
 
 	fno := einhornFdMap(n)
 	f := os.NewFile(uintptr(fno), fmt.Sprintf("einhorn@%d", n))
+	defer f.Close()
 	return net.FileListener(f)
 }
 

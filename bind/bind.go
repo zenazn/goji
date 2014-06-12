@@ -75,6 +75,7 @@ func listenTo(bind string) (net.Listener, error) {
 				bind, err)
 		}
 		f := os.NewFile(uintptr(fd), bind)
+		defer f.Close()
 		return net.FileListener(f)
 	} else if strings.HasPrefix(bind, "einhorn@") {
 		fd, err := strconv.Atoi(bind[8:])
