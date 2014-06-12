@@ -38,8 +38,7 @@ func einhornInit() {
 
 	// Prevent einhorn's fds from leaking to our children
 	for i := 0; i < einhornNumFds; i++ {
-		fd := int(einhornFd(i).Fd())
-		syscall.CloseOnExec(fd)
+		syscall.CloseOnExec(einhornFdMap(i))
 	}
 }
 
@@ -47,13 +46,13 @@ func usingEinhorn() bool {
 	return einhornNumFds > 0
 }
 
-func einhornFd(n int) *os.File {
+func einhornFdMap(n int) int {
 	name := fmt.Sprintf("EINHORN_FD_%d", n)
 	fno, err := envInt(name)
 	if err != nil {
 		log.Fatal(einhornErr)
 	}
-	return os.NewFile(uintptr(fno), name)
+	return fno
 }
 
 func einhornBind(n int) (net.Listener, error) {
@@ -64,7 +63,8 @@ func einhornBind(n int) (net.Listener, error) {
 		return nil, fmt.Errorf(tooBigErr, n, einhornNumFds)
 	}
 
-	f := einhornFd(n)
+	fno := einhornFdMap(n)
+	f := os.NewFile(uintptr(fno), fmt.Sprintf("einhorn@%d", n))
 	return net.FileListener(f)
 }
 
