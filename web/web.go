@@ -56,7 +56,8 @@ use the Env parameter to pass data to other middleware and to the final handler:
 		handler := func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("user")
 			if err == nil {
-				//Consider using the middleware EnvInit instead of repeating the below check
+				// Consider using the middleware EnvInit instead
+				// of repeating the below check
 				if c.Env == nil {
 					c.Env = make(map[string]interface{})
 				}
