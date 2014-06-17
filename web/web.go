@@ -25,7 +25,7 @@ Use your favorite HTTP verbs:
 	var legacyFooHttpHandler http.Handler // From elsewhere
 	m.Get("/foo", legacyFooHttpHandler)
 	m.Post("/bar", func(w http.ResponseWriter, r *http.Request) {
-		w.Write("Hello world!")
+		w.Write([]byte("Hello world!"))
 	})
 
 Bind parameters using either Sinatra-like patterns or regular expressions:
@@ -35,7 +35,7 @@ Bind parameters using either Sinatra-like patterns or regular expressions:
 	})
 	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
 	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Printf(w, "Info for IP address %s:", c.URLParams["ip"])
+		fmt.Fprintf(w, "Info for IP address %s:", c.URLParams["ip"])
 	})
 
 Middleware are functions that wrap http.Handlers, just like you'd use with raw
@@ -56,7 +56,11 @@ use the Env parameter to pass data to other middleware and to the final handler:
 		handler := func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("user")
 			if err == nil {
-				c.Env["user"] = cookie.Raw
+				//Consider using the middleware EnvInit instead of repeating the below check
+				if c.Env == nil {
+					c.Env = make(map[string]interface{})
+				}
+				c.Env["user"] = cookie.Value
 			}
 			h.ServeHTTP(w, r)
 		}
@@ -64,10 +68,10 @@ use the Env parameter to pass data to other middleware and to the final handler:
 	})
 
 	m.Get("/baz", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		if user, ok := c.Env["user"], ok {
-			w.Write("Hello " + string(user))
+		if user, ok := c.Env["user"].(string); ok {
+			w.Write([]byte("Hello " + user))
 		} else {
-			w.Write("Hello Stranger!")
+			w.Write([]byte("Hello Stranger!"))
 		}
 	})
 */
