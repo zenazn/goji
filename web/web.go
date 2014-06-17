@@ -56,7 +56,11 @@ use the Env parameter to pass data to other middleware and to the final handler:
 		handler := func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("user")
 			if err == nil {
-				c.Env["user"] = cookie.Raw
+				//Consider using the middleware EnvInit instead of repeating the below check
+				if c.Env == nil {
+					c.Env = make(map[string]interface{})
+				}
+				c.Env["user"] = cookie.Value
 			}
 			h.ServeHTTP(w, r)
 		}
@@ -64,10 +68,10 @@ use the Env parameter to pass data to other middleware and to the final handler:
 	})
 
 	m.Get("/baz", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		if user, ok := c.Env["user"], ok {
-			w.Write("Hello " + string(user))
+		if user, ok := c.Env["user"].(string); ok {
+			w.Write([]byte("Hello " + user))
 		} else {
-			w.Write("Hello Stranger!")
+			w.Write([]byte("Hello Stranger!"))
 		}
 	})
 */
