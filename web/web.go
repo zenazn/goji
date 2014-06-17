@@ -25,7 +25,7 @@ Use your favorite HTTP verbs:
 	var legacyFooHttpHandler http.Handler // From elsewhere
 	m.Get("/foo", legacyFooHttpHandler)
 	m.Post("/bar", func(w http.ResponseWriter, r *http.Request) {
-		w.Write("Hello world!")
+		w.Write([]byte("Hello world!"))
 	})
 
 Bind parameters using either Sinatra-like patterns or regular expressions:
@@ -35,7 +35,7 @@ Bind parameters using either Sinatra-like patterns or regular expressions:
 	})
 	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
 	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Printf(w, "Info for IP address %s:", c.URLParams["ip"])
+		fmt.Fprintf(w, "Info for IP address %s:", c.URLParams["ip"])
 	})
 
 Middleware are functions that wrap http.Handlers, just like you'd use with raw
