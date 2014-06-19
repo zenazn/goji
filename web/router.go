@@ -178,13 +178,28 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 		}
 
 		length := int(s.mode & smLengthMask)
-		match := length <= len(p)
-		for j := 0; match && j < length; j++ {
-			match = match && p[j] == s.bs[j]
-		}
-
-		if match {
-			p = p[length:]
+		match := false
+		if length <= len(p) {
+			switch length {
+			case 3:
+				if p[2] != s.bs[2] {
+					break
+				}
+				fallthrough
+			case 2:
+				if p[1] != s.bs[1] {
+					break
+				}
+				fallthrough
+			case 1:
+				if p[0] != s.bs[0] {
+					break
+				}
+				fallthrough
+			case 0:
+				p = p[length:]
+				match = true
+			}
 		}
 
 		if match && s.mode&smRoute != 0 {
