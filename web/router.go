@@ -170,29 +170,31 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 
 	var i int
 	for {
-		s := rm.sm[i]
-		if s.mode&smSetCursor != 0 {
-			p = r.URL.Path[s.i:]
+		sm := rm.sm[i].mode
+		if sm&smSetCursor != 0 {
+			si := rm.sm[i].i
+			p = r.URL.Path[si:]
 			i++
 			continue
 		}
 
-		length := int(s.mode & smLengthMask)
+		length := int(sm & smLengthMask)
 		match := false
 		if length <= len(p) {
+			bs := rm.sm[i].bs
 			switch length {
 			case 3:
-				if p[2] != s.bs[2] {
+				if p[2] != bs[2] {
 					break
 				}
 				fallthrough
 			case 2:
-				if p[1] != s.bs[1] {
+				if p[1] != bs[1] {
 					break
 				}
 				fallthrough
 			case 1:
-				if p[0] != s.bs[0] {
+				if p[0] != bs[0] {
 					break
 				}
 				fallthrough
@@ -202,20 +204,21 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 			}
 		}
 
-		if match && s.mode&smRoute != 0 {
-			if matchRoute(rm.routes[s.i], m, &methods, r, c) {
-				rm.routes[s.i].handler.ServeHTTPC(*c, w, r)
+		if match && sm&smRoute != 0 {
+			si := rm.sm[i].i
+			if matchRoute(rm.routes[si], m, &methods, r, c) {
+				rm.routes[si].handler.ServeHTTPC(*c, w, r)
 				return 0, true
 			} else {
 				i++
 			}
-		} else if (match && s.mode&smJumpOnMatch != 0) ||
-			(!match && s.mode&smJumpOnMatch == 0) {
+		} else if (match && sm&smJumpOnMatch != 0) ||
+			(!match && sm&smJumpOnMatch == 0) {
 
-			if s.mode&smFail != 0 {
+			if sm&smFail != 0 {
 				return methods, false
 			}
-			i = int(s.i)
+			i = int(rm.sm[i].i)
 		} else {
 			i++
 		}

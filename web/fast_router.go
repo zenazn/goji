@@ -48,8 +48,8 @@ Unfortunately, the code implementing all of this is pretty bad (both inefficient
 and hard to read). Maybe someday I'll come and take a second pass at it.
 */
 type state struct {
-	bs   [3]byte
 	mode smMode
+	bs   [3]byte
 	i    int32
 }
 type stateMachine []state
