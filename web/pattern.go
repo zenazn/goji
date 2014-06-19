@@ -174,9 +174,11 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 		}
 		path = path[len(sli):]
 
-		m := strings.IndexRune(path, '/')
-		if m == -1 {
-			m = len(path)
+		m := 0
+		for ; m < len(path); m++ {
+			if path[m] == '/' {
+				break
+			}
 		}
 		if m == 0 {
 			// Empty strings are not matches, otherwise routes like
