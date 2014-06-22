@@ -130,6 +130,19 @@ handful of CPU cycles.
 [bench2]: https://github.com/julienschmidt/go-http-routing-benchmark
 
 
+Third-Party Libraries
+---------------------
+
+Goji is already compatible with a great many third-party libraries that are
+themselves compatible with `net/http`, however some library authors have gone
+out of their way to include Goji compatibility specifically, perhaps by
+integrating more tightly with Goji's `web.C` or by providing a custom pattern
+type. An informal list of such libraries is maintained [on the wiki][third];
+feel free to add to it as you see fit.
+
+[third]: https://github.com/zenazn/goji/wiki/Third-Party-Libraries
+
+
 Contributing
 ------------
 
