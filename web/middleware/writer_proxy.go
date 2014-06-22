@@ -33,9 +33,11 @@ type basicWriter struct {
 }
 
 func (b *basicWriter) WriteHeader(code int) {
-	b.code = code
-	b.wroteHeader = true
-	b.ResponseWriter.WriteHeader(code)
+	if !b.wroteHeader {
+		b.code = code
+		b.wroteHeader = true
+		b.ResponseWriter.WriteHeader(code)
+	}
 }
 func (b *basicWriter) Write(buf []byte) (int, error) {
 	b.maybeWriteHeader()
