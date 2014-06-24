@@ -38,7 +38,7 @@ func printPanic(reqID string, err interface{}) {
 	if reqID != "" {
 		cW(&buf, bBlack, "[%s] ", reqID)
 	}
-	cW(&buf, bRed, "panic: %#v", err)
+	cW(&buf, bRed, "panic: %+v", err)
 
 	log.Print(buf.String())
 }
