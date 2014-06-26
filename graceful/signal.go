@@ -24,28 +24,28 @@ var hookLock sync.Mutex
 var prehooks = make([]func(), 0)
 var posthooks = make([]func(), 0)
 
+var stdSignals = []os.Signal{os.Interrupt}
 var sigchan = make(chan os.Signal, 1)
 
 func init() {
-	AddSignal(os.Interrupt)
 	go waitForSignal()
 }
 
+// HandleSignals installs signal handlers for a set of standard signals. By
+// default, this set only includes keyboard interrupts, however when the package
+// detects that it is running under Einhorn, a SIGUSR2 handler is installed as
+// well.
+func HandleSignals() {
+	AddSignal(stdSignals...)
+}
+
 // AddSignal adds the given signal to the set of signals that trigger a graceful
-// shutdown. Note that for convenience the default interrupt (SIGINT) handler is
-// installed at package load time, and unless you call ResetSignals() will be
-// listened for in addition to any signals you provide by calling this function.
+// shutdown.
 func AddSignal(sig ...os.Signal) {
 	signal.Notify(sigchan, sig...)
 }
 
 // ResetSignals resets the list of signals that trigger a graceful shutdown.
-// Useful if, for instance, you don't want to use the default interrupt (SIGINT)
-// handler. Since we necessarily install the SIGINT handler before you have a
-// chance to call ResetSignals(), there will be a brief window during which the
-// set of signals this package listens for will not be as you intend. Therefore,
-// if you intend on using this function, we encourage you to call it as soon as
-// possible.
 func ResetSignals() {
 	signal.Stop(sigchan)
 }

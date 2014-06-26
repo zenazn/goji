@@ -59,6 +59,7 @@ func Serve() {
 	listener := bind.Default()
 	log.Println("Starting Goji on", listener.Addr())
 
+	graceful.HandleSignals()
 	bind.Ready()
 
 	err := graceful.Serve(listener, http.DefaultServeMux)
