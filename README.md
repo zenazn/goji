@@ -62,7 +62,7 @@ Maybe!
 There are [plenty][revel] of [other][gorilla] [good][pat] [Go][martini]
 [web][gocraft] [frameworks][tiger] out there. Goji is by no means especially
 novel, nor is it uniquely good. The primary difference between Goji and other
-frameworks--and the primary reason I think Goji is any good--is its philosophy:
+frameworks—and the primary reason I think Goji is any good—is its philosophy:
 
 Goji first of all attempts to be simple. It is of the Sinatra and Flask school
 of web framework design, and not the Rails/Django one. If you want me to tell
