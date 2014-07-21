@@ -39,7 +39,18 @@ var bind string
 func init() {
 	einhornInit()
 	systemdInit()
+}
 
+// WithFlag adds a standard flag to the global flag instance that allows
+// configuration of the default socket. Users who call Default() must call this
+// function before flags are parsed, for example in an init() block.
+//
+// When selecting the default bind string, this function will examine its
+// environment for hints about what port to bind to, selecting the GOJI_BIND
+// environment variable, Einhorn, systemd, the PORT environment variable, and
+// the port 8000, in order. In most cases, this means that the default behavior
+// of the default socket will be reasonable for use in your circumstance.
+func WithFlag() {
 	defaultBind := ":8000"
 	if bind := os.Getenv("GOJI_BIND"); bind != "" {
 		defaultBind = bind

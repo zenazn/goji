@@ -44,6 +44,10 @@ import (
 	"github.com/zenazn/goji/graceful"
 )
 
+func init() {
+	bind.WithFlag()
+}
+
 // Serve starts Goji using reasonable defaults.
 func Serve() {
 	if !flag.Parsed() {
