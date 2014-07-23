@@ -42,7 +42,16 @@ func printStart(reqID string, r *http.Request) {
 	}
 	buf.WriteString("Started ")
 	cW(&buf, bMagenta, "%s ", r.Method)
-	cW(&buf, nBlue, "%q ", r.URL.String())
+
+	// Adds POST/PUT params to log
+	urlWithParams := r.URL.String()
+	if r.Method == "POST" || r.Method == "PUT" {
+		r.ParseForm()
+		urlWithParams += " {" + r.PostForm.Encode() + "}"
+	}
+
+	cW(&buf, nBlue, "%q ", urlWithParams)
+
 	buf.WriteString("from ")
 	buf.WriteString(r.RemoteAddr)
 
