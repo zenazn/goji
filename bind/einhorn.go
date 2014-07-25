@@ -70,7 +70,7 @@ func einhornBind(n int) (net.Listener, error) {
 }
 
 // Fun story: this is actually YAML, not JSON.
-const ackMsg = `{"command":"worker:ack","pid":%d}` + "\n"
+const ackMsg = `{"command": "worker:ack", "pid": %d}` + "\n"
 
 func einhornAck() {
 	if !usingEinhorn() {
