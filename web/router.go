@@ -231,7 +231,7 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 // after all the routes have been added, and will be called automatically for
 // you (at some performance cost on the first request) if you do not call it
 // explicitly.
-func (rt *router) Compile() {
+func (rt *router) Compile() *routeMachine {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
 	sm := routeMachine{
@@ -239,14 +239,16 @@ func (rt *router) Compile() {
 		routes: rt.routes,
 	}
 	rt.setMachine(&sm)
+	return &sm
 }
 
 func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
-	if rt.machine == nil {
-		rt.Compile()
+	rm := rt.getMachine()
+	if rm == nil {
+		rm = rt.Compile()
 	}
 
-	methods, ok := rt.getMachine().route(c, w, r)
+	methods, ok := rm.route(c, w, r)
 	if ok {
 		return
 	}

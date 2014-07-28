@@ -5,10 +5,10 @@ import (
 	"unsafe"
 )
 
-func (rt *router) getMachine() routeMachine {
+func (rt *router) getMachine() *routeMachine {
 	ptr := (*unsafe.Pointer)(unsafe.Pointer(&rt.machine))
 	sm := (*routeMachine)(atomic.LoadPointer(ptr))
-	return *sm
+	return sm
 }
 func (rt *router) setMachine(m *routeMachine) {
 	ptr := (*unsafe.Pointer)(unsafe.Pointer(&rt.machine))
