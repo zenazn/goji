@@ -1,5 +1,7 @@
-Goji [![GoDoc](https://godoc.org/github.com/zenazn/goji?status.png)](https://godoc.org/github.com/zenazn/goji) [![Build Status](https://travis-ci.org/zenazn/goji.svg)](https://travis-ci.org/zenazn/goji)
+Goji
 ====
+
+[![GoDoc](https://godoc.org/github.com/zenazn/goji/web?status.svg)](https://godoc.org/github.com/zenazn/goji/web) [![Build Status](https://travis-ci.org/zenazn/goji.svg)](https://travis-ci.org/zenazn/goji)
 
 Goji is a minimalistic web framework that values composability and simplicity.
 
