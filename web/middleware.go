@@ -87,9 +87,6 @@ func (m *mStack) invalidate() {
 }
 
 func (m *mStack) newStack() *cStack {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
 	cs := cStack{}
 	router := m.router
 
@@ -104,10 +101,6 @@ func (m *mStack) newStack() *cStack {
 }
 
 func (m *mStack) alloc() *cStack {
-	// This is a little sloppy: this is only safe if this pointer
-	// dereference is atomic. Maybe someday I'll replace it with
-	// sync/atomic, but for now I happen to know that on all the
-	// architectures I care about it happens to be atomic.
 	p := m.pool
 	cs := p.alloc()
 	if cs == nil {
@@ -130,7 +123,8 @@ func (m *mStack) release(cs *cStack) {
 // Append the given middleware to the middleware stack. See the documentation
 // for type Mux for a list of valid middleware types.
 //
-// No attempt is made to enforce the uniqueness of middlewares.
+// No attempt is made to enforce the uniqueness of middlewares. It is illegal to
+// call this function concurrently with active requests.
 func (m *mStack) Use(middleware interface{}) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -143,7 +137,8 @@ func (m *mStack) Use(middleware interface{}) {
 // types. Returns an error if no middleware has the name given by "before."
 //
 // No attempt is made to enforce the uniqueness of middlewares. If the insertion
-// point is ambiguous, the first (outermost) one is chosen.
+// point is ambiguous, the first (outermost) one is chosen. It is illegal to
+// call this function concurrently with active requests.
 func (m *mStack) Insert(middleware, before interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -165,7 +160,8 @@ func (m *mStack) Insert(middleware, before interface{}) error {
 // no such middleware can be found.
 //
 // If the name of the middleware to delete is ambiguous, the first (outermost)
-// one is chosen.
+// one is chosen. It is illegal to call this function concurrently with active
+// requests.
 func (m *mStack) Abandon(middleware interface{}) error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
