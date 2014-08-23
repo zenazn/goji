@@ -19,7 +19,7 @@ func makeStack(ch chan string) *mStack {
 	}
 	return &mStack{
 		stack:  make([]mLayer, 0),
-		pool:   make(chan *cStack, mPoolSize),
+		pool:   makeCPool(),
 		router: iRouter(router),
 	}
 }
@@ -215,7 +215,7 @@ func TestContext(t *testing.T) {
 	}
 	st := mStack{
 		stack:  make([]mLayer, 0),
-		pool:   make(chan *cStack, mPoolSize),
+		pool:   makeCPool(),
 		router: iRouter(router),
 	}
 	st.Use(func(c *C, h http.Handler) http.Handler {
