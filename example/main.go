@@ -14,8 +14,8 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/goji/param"
 	"github.com/zenazn/goji"
-	"github.com/zenazn/goji/param"
 	"github.com/zenazn/goji/web"
 )
 

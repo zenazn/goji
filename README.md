@@ -44,13 +44,11 @@ Features
 * Automatic support for [Einhorn][einhorn], systemd, and [more][bind]
 * [Graceful shutdown][graceful], and zero-downtime graceful reload when combined
   with Einhorn.
-* Ruby on Rails / jQuery style [parameter parsing][param]
 * High in antioxidants
 
 [einhorn]: https://github.com/stripe/einhorn
 [bind]: http://godoc.org/github.com/zenazn/goji/bind
 [graceful]: http://godoc.org/github.com/zenazn/goji/graceful
-[param]: http://godoc.org/github.com/zenazn/goji/param
 [pattern]: https://godoc.org/github.com/zenazn/goji/web#Pattern
 
 
