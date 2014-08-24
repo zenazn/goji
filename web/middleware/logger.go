@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/zenazn/goji/web"
+	"github.com/zenazn/goji/web/util"
 )
 
 // Logger is a middleware that logs the start and end of each request, along
@@ -21,11 +22,14 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 
 		printStart(reqID, r)
 
-		lw := wrapWriter(w)
+		lw := util.WrapWriter(w)
 
 		t1 := time.Now()
 		h.ServeHTTP(lw, r)
-		lw.maybeWriteHeader()
+
+		if lw.Status() == 0 {
+			lw.WriteHeader(http.StatusOK)
+		}
 		t2 := time.Now()
 
 		printEnd(reqID, lw, t2.Sub(t1))
@@ -49,23 +53,24 @@ func printStart(reqID string, r *http.Request) {
 	log.Print(buf.String())
 }
 
-func printEnd(reqID string, w writerProxy, dt time.Duration) {
+func printEnd(reqID string, w util.WriterProxy, dt time.Duration) {
 	var buf bytes.Buffer
 
 	if reqID != "" {
 		cW(&buf, bBlack, "[%s] ", reqID)
 	}
 	buf.WriteString("Returning ")
-	if w.status() < 200 {
-		cW(&buf, bBlue, "%03d", w.status())
-	} else if w.status() < 300 {
-		cW(&buf, bGreen, "%03d", w.status())
-	} else if w.status() < 400 {
-		cW(&buf, bCyan, "%03d", w.status())
-	} else if w.status() < 500 {
-		cW(&buf, bYellow, "%03d", w.status())
+	status := w.Status()
+	if status < 200 {
+		cW(&buf, bBlue, "%03d", status)
+	} else if status < 300 {
+		cW(&buf, bGreen, "%03d", status)
+	} else if status < 400 {
+		cW(&buf, bCyan, "%03d", status)
+	} else if status < 500 {
+		cW(&buf, bYellow, "%03d", status)
 	} else {
-		cW(&buf, bRed, "%03d", w.status())
+		cW(&buf, bRed, "%03d", status)
 	}
 	buf.WriteString(" in ")
 	if dt < 500*time.Millisecond {
