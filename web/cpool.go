@@ -14,9 +14,8 @@ func (c *cPool) alloc() *cStack {
 	cs := (*sync.Pool)(c).Get()
 	if cs == nil {
 		return nil
-	} else {
-		return cs.(*cStack)
 	}
+	return cs.(*cStack)
 }
 
 func (c *cPool) release(cs *cStack) {

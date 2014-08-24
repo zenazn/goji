@@ -209,9 +209,8 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 			if matchRoute(rm.routes[si], m, &methods, r, c) {
 				rm.routes[si].handler.ServeHTTPC(*c, w, r)
 				return 0, true
-			} else {
-				i++
 			}
+			i++
 		} else if (match && sm&smJumpOnMatch != 0) ||
 			(!match && sm&smJumpOnMatch == 0) {
 
