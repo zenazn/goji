@@ -1,4 +1,4 @@
-// +build !windows !appengine
+// +build !windows,!appengine
 
 package bind
 
