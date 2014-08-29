@@ -102,7 +102,7 @@ type C struct {
 	// A free-form environment, similar to Rack or PEP 333's environments.
 	// Middleware layers are encouraged to pass data to downstream layers
 	// and other handlers using this map, and are even more strongly
-	// encouraged to document and maybe namespace they keys they use.
+	// encouraged to document and maybe namespace the keys they use.
 	Env map[string]interface{}
 }
 
