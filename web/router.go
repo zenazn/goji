@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 
@@ -146,7 +145,10 @@ func matchRoute(route route, m method, ms *methodSet, r *http.Request, c context
 	if !route.pattern.Match(r, c) {
 		return c, false
 	}
-	*ms |= methodSet(route.method)
+
+	if m == mOPTIONS {
+		*ms |= methodSet(route.method)
+	}
 
 	if route.method&m != 0 {
 		c = route.pattern.Run(r, c)
@@ -248,20 +250,9 @@ func (rt *router) route(c context.Context, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if ms == 0 {
-		rt.notFound.ServeHTTPC(c, w, r)
-		return
+	if ms != 0 {
+		c = context.WithValue(c, validMethodsKey, ms)
 	}
-
-	var methodsList = make([]string, 0)
-	for mname, meth := range validMethodsMap {
-		if ms&methodSet(meth) != 0 {
-			methodsList = append(methodsList, mname)
-		}
-	}
-	sort.Strings(methodsList)
-
-	c = context.WithValue(c, validMethodsKey, methodsList)
 
 	rt.notFound.ServeHTTPC(c, w, r)
 }
