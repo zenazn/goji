@@ -3,12 +3,13 @@ package middleware
 import (
 	"net/http"
 	"strings"
-
 	"github.com/zenazn/goji/web"
+
+	"code.google.com/p/go.net/context"
 )
 
 // Key the original value of RemoteAddr is stored under.
-const OriginalRemoteAddrKey = "originalRemoteAddr"
+const OriginalRemoteAddrKey ctxkey = "originalRemoteAddr"
 
 var xForwardedFor = http.CanonicalHeaderKey("X-Forwarded-For")
 var xRealIP = http.CanonicalHeaderKey("X-Real-IP")
@@ -29,19 +30,16 @@ var xRealIP = http.CanonicalHeaderKey("X-Real-IP")
 // values from the client, or if you use this middleware without a reverse
 // proxy, malicious clients will be able to make you very sad (or, depending on
 // how you're using RemoteAddr, vulnerable to an attack of some sort).
-func RealIP(c *web.C, h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+func RealIP(h web.Handler) web.Handler {
+	fn := func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		if rip := realIP(r); rip != "" {
-			if c.Env == nil {
-				c.Env = make(map[string]interface{})
-			}
-			c.Env[OriginalRemoteAddrKey] = r.RemoteAddr
+			c = context.WithValue(c, OriginalRemoteAddrKey, r.RemoteAddr)
 			r.RemoteAddr = rip
 		}
-		h.ServeHTTP(w, r)
+		h.ServeHTTPC(c, w, r)
 	}
 
-	return http.HandlerFunc(fn)
+	return web.HandlerFunc(fn)
 }
 
 func realIP(r *http.Request) string {

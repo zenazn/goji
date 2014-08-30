@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 )
@@ -21,7 +22,7 @@ const (
 // the httptest dependency.
 type autoOptionsProxy struct {
 	w     http.ResponseWriter
-	c     *web.C
+	c     context.Context
 	state autoOptionsState
 }
 
@@ -40,7 +41,7 @@ func (p *autoOptionsProxy) Write(buf []byte) (int, error) {
 }
 
 func (p *autoOptionsProxy) WriteHeader(code int) {
-	methods := getValidMethods(*p.c)
+	methods := getValidMethods(p.c)
 	switch p.state {
 	case aosInit:
 		if methods != nil && code == http.StatusNotFound {
@@ -61,30 +62,20 @@ func (p *autoOptionsProxy) WriteHeader(code int) {
 
 // AutomaticOptions automatically return an appropriate "Allow" header when the
 // request method is OPTIONS and the request would have otherwise been 404'd.
-func AutomaticOptions(c *web.C, h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
+func AutomaticOptions(h web.Handler) web.Handler {
+	fn := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
-			w = &autoOptionsProxy{c: c, w: w}
+			w = &autoOptionsProxy{c: ctx, w: w}
 		}
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTPC(ctx, w, r)
 	}
 
-	return http.HandlerFunc(fn)
+	return web.HandlerFunc(fn)
 }
 
-func getValidMethods(c web.C) []string {
-	if c.Env == nil {
-		return nil
-	}
-	v, ok := c.Env[web.ValidMethodsKey]
-	if !ok {
-		return nil
-	}
-	if methods, ok := v.([]string); ok {
-		return methods
-	}
-	return nil
+func getValidMethods(c context.Context) []string {
+	return web.ValidMethods(c)
 }
 
 func addMethod(methods []string, method string) []string {

@@ -30,11 +30,11 @@ Use your favorite HTTP verbs:
 
 Bind parameters using either Sinatra-like patterns or regular expressions:
 
-	m.Get("/hello/:name", func(c web.C, w http.ResponseWriter, r *http.Request) {
+	m.Get("/hello/:name", func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
 	})
 	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
-	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
+	m.Get(pattern, func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Info for IP address %s:", c.URLParams["ip"])
 	})
 
@@ -52,7 +52,7 @@ the Env parameter to pass data to other middleware and to the final handler:
 		}
 		return http.HandlerFunc(handler)
 	})
-	m.Use(func(c *web.C, h http.Handler) http.Handler {
+	m.Use(func(c context.Context, h http.Handler) http.Handler {
 		handler := func(w http.ResponseWriter, r *http.Request) {
 			cookie, err := r.Cookie("user")
 			if err == nil {
@@ -68,7 +68,7 @@ the Env parameter to pass data to other middleware and to the final handler:
 		return http.HandlerFunc(handler)
 	})
 
-	m.Get("/baz", func(c web.C, w http.ResponseWriter, r *http.Request) {
+	m.Get("/baz", func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		if user, ok := c.Env["user"].(string); ok {
 			w.Write([]byte("Hello " + user))
 		} else {
@@ -80,49 +80,22 @@ package web
 
 import (
 	"net/http"
+
+	"code.google.com/p/go.net/context"
 )
 
-/*
-C is a per-request context object which is threaded through all compliant middleware
-layers and to the final request handler.
-
-As an implementation detail, references to these structs are reused between
-requests to reduce allocation churn, but the maps they contain are created fresh
-on every request. If you are closing over a context (especially relevant for
-middleware), you should not close over either the URLParams or Env objects,
-instead accessing them through the context whenever they are required.
-*/
-type C struct {
-	// The parameters parsed by the mux from the URL itself. In most cases,
-	// will contain a map from programmer-specified identifiers to the
-	// strings that matched those identifiers, but if a unnamed regex
-	// capture is used, it will be assigned to the special identifiers "$1",
-	// "$2", etc.
-	URLParams map[string]string
-	// A free-form environment, similar to Rack or PEP 333's environments.
-	// Middleware layers are encouraged to pass data to downstream layers
-	// and other handlers using this map, and are even more strongly
-	// encouraged to document and maybe namespace the keys they use.
-	Env map[string]interface{}
-}
-
-// Handler is a superset of net/http's http.Handler, which also includes a
+// Handler is like net/http's http.Handler, but also includes a
 // mechanism for serving requests with a context. If your handler does not
 // support the use of contexts, we encourage you to use http.Handler instead.
 type Handler interface {
-	http.Handler
-	ServeHTTPC(C, http.ResponseWriter, *http.Request)
+	ServeHTTPC(context.Context, http.ResponseWriter, *http.Request)
 }
 
 // HandlerFunc is like net/http's http.HandlerFunc, but supports a context
-// object. Implements both http.Handler and web.Handler free of charge.
-type HandlerFunc func(C, http.ResponseWriter, *http.Request)
-
-func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h(C{}, w, r)
-}
+// object.
+type HandlerFunc func(context.Context, http.ResponseWriter, *http.Request)
 
 // ServeHTTPC wraps ServeHTTP with a context parameter.
-func (h HandlerFunc) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
+func (h HandlerFunc) ServeHTTPC(c context.Context, w http.ResponseWriter, r *http.Request) {
 	h(c, w, r)
 }

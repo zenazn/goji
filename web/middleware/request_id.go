@@ -8,12 +8,15 @@ import (
 	"os"
 	"strings"
 	"sync/atomic"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 )
 
+type ctxkey string
+
 // Key to use when setting the request ID.
-const RequestIDKey = "reqID"
+const RequestIDKey ctxkey = "reqID"
 
 var prefix string
 var reqid uint64
@@ -57,32 +60,22 @@ func init() {
 // where "random" is a base62 random string that uniquely identifies this go
 // process, and where the last number is an atomically incremented request
 // counter.
-func RequestID(c *web.C, h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		if c.Env == nil {
-			c.Env = make(map[string]interface{})
-		}
+func RequestID(h web.Handler) web.Handler {
+	fn := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 		myid := atomic.AddUint64(&reqid, 1)
-		c.Env[RequestIDKey] = fmt.Sprintf("%s-%06d", prefix, myid)
-
-		h.ServeHTTP(w, r)
+		c := context.WithValue(ctx, RequestIDKey, fmt.Sprintf("%s-%06d", prefix, myid))
+		h.ServeHTTPC(c, w, r)
 	}
 
-	return http.HandlerFunc(fn)
+	return web.HandlerFunc(fn)
 }
 
 // GetReqID returns a request ID from the given context if one is present.
 // Returns the empty string if a request ID cannot be found.
-func GetReqID(c web.C) string {
-	if c.Env == nil {
-		return ""
-	}
-	v, ok := c.Env[RequestIDKey]
+func GetReqID(c context.Context) string {
+	v, ok := c.Value(RequestIDKey).(string)
 	if !ok {
 		return ""
 	}
-	if reqID, ok := v.(string); ok {
-		return reqID
-	}
-	return ""
+	return v
 }

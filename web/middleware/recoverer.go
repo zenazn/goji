@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 )
@@ -14,9 +15,9 @@ import (
 // possible.
 //
 // Recoverer prints a request ID if one is provided.
-func Recoverer(c *web.C, h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		reqID := GetReqID(*c)
+func Recoverer(h web.Handler) web.Handler {
+	fn := func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		reqID := GetReqID(c)
 
 		defer func() {
 			if err := recover(); err != nil {
@@ -26,10 +27,10 @@ func Recoverer(c *web.C, h http.Handler) http.Handler {
 			}
 		}()
 
-		h.ServeHTTP(w, r)
+		h.ServeHTTPC(c, w, r)
 	}
 
-	return http.HandlerFunc(fn)
+	return web.HandlerFunc(fn)
 }
 
 func printPanic(reqID string, err interface{}) {

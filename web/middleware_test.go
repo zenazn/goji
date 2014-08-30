@@ -5,20 +5,22 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"code.google.com/p/go.net/context"
 )
 
-type iRouter func(*C, http.ResponseWriter, *http.Request)
+type iRouter func(context.Context, http.ResponseWriter, *http.Request)
 
-func (i iRouter) route(c *C, w http.ResponseWriter, r *http.Request) {
+func (i iRouter) route(c context.Context, w http.ResponseWriter, r *http.Request) {
 	i(c, w, r)
 }
 
 func makeStack(ch chan string) *mStack {
-	router := func(c *C, w http.ResponseWriter, r *http.Request) {
+	router := func(c context.Context, w http.ResponseWriter, r *http.Request) {
 		ch <- "router"
 	}
 	return &mStack{
-		stack:  make([]mLayer, 0),
+		stack:  make([]interface{}, 0),
 		pool:   makeCPool(),
 		router: iRouter(router),
 	}
@@ -43,7 +45,7 @@ func simpleRequest(ch chan string, st *mStack) {
 	cs := st.alloc()
 	defer st.release(cs)
 
-	cs.ServeHTTP(w, r)
+	cs.ServeHTTPC(context.Background(), w, r)
 }
 
 func assertOrder(t *testing.T, ch chan string, strings ...string) {
@@ -80,7 +82,7 @@ func TestTypes(t *testing.T) {
 	st.Use(func(h http.Handler) http.Handler {
 		return h
 	})
-	st.Use(func(c *C, h http.Handler) http.Handler {
+	st.Use(func(h Handler) Handler {
 		return h
 	})
 }
@@ -207,40 +209,40 @@ func TestInvalidation(t *testing.T) {
 	}
 }
 
+type reqKey int
+
+const reqID reqKey = 0
+
 func TestContext(t *testing.T) {
-	router := func(c *C, w http.ResponseWriter, r *http.Request) {
-		if c.Env["reqID"].(int) != 2 {
+	router := func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		if id, ok := c.Value(reqID).(int); !ok || id != 2 {
 			t.Error("Request id was not 2 :(")
 		}
 	}
 	st := mStack{
-		stack:  make([]mLayer, 0),
+		stack:  make([]interface{}, 0),
 		pool:   makeCPool(),
 		router: iRouter(router),
 	}
-	st.Use(func(c *C, h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			if c.Env != nil || c.URLParams != nil {
+	st.Use(func(h Handler) Handler {
+		fn := func(c context.Context, w http.ResponseWriter, r *http.Request) {
+			if c.Value(reqID) != nil {
 				t.Error("Expected a clean context")
 			}
-			c.Env = make(map[string]interface{})
-			c.Env["reqID"] = 1
-
-			h.ServeHTTP(w, r)
+			h.ServeHTTPC(context.WithValue(c, reqID, 1), w, r)
 		}
-		return http.HandlerFunc(fn)
+		return HandlerFunc(fn)
 	})
 
-	st.Use(func(c *C, h http.Handler) http.Handler {
-		fn := func(w http.ResponseWriter, r *http.Request) {
-			if c.Env == nil {
-				t.Error("Expected env from last middleware")
+	st.Use(func(h Handler) Handler {
+		fn := func(c context.Context, w http.ResponseWriter, r *http.Request) {
+			id, ok := c.Value(reqID).(int)
+			if !ok {
+				t.Error("Expected request ID from last middleware")
 			}
-			c.Env["reqID"] = c.Env["reqID"].(int) + 1
-
-			h.ServeHTTP(w, r)
+			h.ServeHTTPC(context.WithValue(c, reqID, id+1), w, r)
 		}
-		return http.HandlerFunc(fn)
+		return HandlerFunc(fn)
 	})
 	ch := make(chan string)
 	go simpleRequest(ch, &st)

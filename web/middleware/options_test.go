@@ -4,28 +4,25 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 )
 
-func testOptions(r *http.Request, f func(*web.C, http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
-	var c web.C
-
-	h := func(w http.ResponseWriter, r *http.Request) {
-		f(&c, w, r)
+func testOptions(r *http.Request, f func(context.Context, http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
+	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		f(ctx, w, r)
 	}
-	m := AutomaticOptions(&c, http.HandlerFunc(h))
+	m := AutomaticOptions(web.HandlerFunc(h))
 	w := httptest.NewRecorder()
-	m.ServeHTTP(w, r)
+	m.ServeHTTPC(context.Background(), w, r)
 
 	return w
 }
 
-var optionsTestEnv = map[string]interface{}{
-	web.ValidMethodsKey: []string{
-		"hello",
-		"world",
-	},
+var optionsTestValidMethodsKey = []string{
+	"hello",
+	"world",
 }
 
 func TestAutomaticOptions(t *testing.T) {
@@ -34,7 +31,7 @@ func TestAutomaticOptions(t *testing.T) {
 	// Shouldn't interfere with normal requests
 	r, _ := http.NewRequest("GET", "/", nil)
 	rr := testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
+		func(c context.Context, w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte{'h', 'i'})
 		},
 	)
@@ -52,8 +49,8 @@ func TestAutomaticOptions(t *testing.T) {
 	// If we respond non-404 to an OPTIONS request, also don't interfere
 	r, _ = http.NewRequest("OPTIONS", "/", nil)
 	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			c.Env = optionsTestEnv
+		func(c context.Context, w http.ResponseWriter, r *http.Request) {
+			//			c.Env = optionsTestEnv
 			w.Write([]byte{'h', 'i'})
 		},
 	)
@@ -71,8 +68,8 @@ func TestAutomaticOptions(t *testing.T) {
 	// Provide options if we 404. Make sure we nom the output bytes
 	r, _ = http.NewRequest("OPTIONS", "/", nil)
 	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			c.Env = optionsTestEnv
+		func(c context.Context, w http.ResponseWriter, r *http.Request) {
+			//c.Env = optionsTestEnv
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte{'h', 'i'})
 		},
@@ -94,7 +91,7 @@ func TestAutomaticOptions(t *testing.T) {
 	// anything
 	r, _ = http.NewRequest("OPTIONS", "/", nil)
 	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
+		func(c context.Context, w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte{'h', 'i'})
 		},

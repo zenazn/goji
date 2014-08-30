@@ -5,22 +5,19 @@ import (
 	"log"
 	"net/http"
 	"sync"
-)
 
-type mLayer struct {
-	fn   func(*C, http.Handler) http.Handler
-	orig interface{}
-}
+	"code.google.com/p/go.net/context"
+)
 
 type mStack struct {
 	lock   sync.Mutex
-	stack  []mLayer
+	stack  []interface{}
 	pool   *cPool
 	router internalRouter
 }
 
 type internalRouter interface {
-	route(*C, http.ResponseWriter, *http.Request)
+	route(context.Context, http.ResponseWriter, *http.Request)
 }
 
 /*
@@ -41,41 +38,44 @@ rotated since then (meaning that this cStack is invalid), it will either try
 cStack on the floor.
 */
 type cStack struct {
-	C
-	m    http.Handler
+	ctx  context.Context
+	m    Handler
 	pool *cPool
 }
 
-func (s *cStack) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.C = C{}
-	s.m.ServeHTTP(w, r)
+func (s *cStack) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	s.ctx = ctx
+	s.m.ServeHTTPC(ctx, w, r)
 }
-func (s *cStack) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
-	s.C = c
-	s.m.ServeHTTP(w, r)
+
+func (s *cStack) toHTTPHandler(h Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTPC(s.ctx, w, r)
+	})
+}
+
+func (s *cStack) fromHTTPHandler(h http.Handler) Handler {
+	return HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		s.ctx = ctx
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (m *mStack) appendLayer(fn interface{}) {
-	ml := mLayer{orig: fn}
 	switch fn.(type) {
 	case func(http.Handler) http.Handler:
-		unwrapped := fn.(func(http.Handler) http.Handler)
-		ml.fn = func(c *C, h http.Handler) http.Handler {
-			return unwrapped(h)
-		}
-	case func(*C, http.Handler) http.Handler:
-		ml.fn = fn.(func(*C, http.Handler) http.Handler)
+	case func(Handler) Handler:
 	default:
-		log.Fatalf(`Unknown middleware type %v. Expected a function `+
+		log.Panicf(`Unknown middleware type %T. Expected a function `+
 			`with signature "func(http.Handler) http.Handler" or `+
-			`"func(*web.C, http.Handler) http.Handler".`, fn)
+			`"func(web.Handler) web.Handler".`, fn)
 	}
-	m.stack = append(m.stack, ml)
+	m.stack = append(m.stack, fn)
 }
 
 func (m *mStack) findLayer(l interface{}) int {
 	for i, middleware := range m.stack {
-		if funcEqual(l, middleware.orig) {
+		if funcEqual(l, middleware) {
 			return i
 		}
 	}
@@ -88,13 +88,19 @@ func (m *mStack) invalidate() {
 
 func (m *mStack) newStack() *cStack {
 	cs := cStack{}
+	cs.ctx = context.Background()
 	router := m.router
 
-	cs.m = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		router.route(&cs.C, w, r)
-	})
+	cs.m = HandlerFunc(router.route)
+
 	for i := len(m.stack) - 1; i >= 0; i-- {
-		cs.m = m.stack[i].fn(&cs.C, cs.m)
+		switch fn := m.stack[i].(type) {
+		case func(http.Handler) http.Handler:
+			httphandler := cs.toHTTPHandler(cs.m)
+			cs.m = cs.fromHTTPHandler(fn(httphandler))
+		case func(Handler) Handler:
+			cs.m = fn(cs.m)
+		}
 	}
 
 	return &cs
@@ -112,7 +118,7 @@ func (m *mStack) alloc() *cStack {
 }
 
 func (m *mStack) release(cs *cStack) {
-	cs.C = C{}
+	cs.ctx = nil
 	if cs.pool != m.pool {
 		return
 	}
