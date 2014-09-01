@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/goji/param"
 	"github.com/zenazn/goji"
@@ -57,6 +58,9 @@ func main() {
 
 	// Use a custom 404 handler
 	goji.NotFound(NotFound)
+
+	// Sometimes requests take a long time.
+	goji.Get("/waitforit", WaitForIt)
 
 	// Call Serve() at the bottom of your main() function, and it'll take
 	// care of everything else for you, including binding to a socket (with
@@ -133,6 +137,20 @@ func GetGreet(c web.C, w http.ResponseWriter, r *http.Request) {
 
 	io.WriteString(w, "Gritter\n======\n\n")
 	greet.Write(w)
+}
+
+// WaitForIt is a particularly slow handler (GET "/waitforit"). Try loading this
+// endpoint and initiating a graceful shutdown (Ctrl-C) or Einhorn reload. The
+// old server will stop accepting new connections and will attempt to kill
+// outstanding idle (keep-alive) connections, but will patiently stick around
+// for this endpoint to finish. How kind of it!
+func WaitForIt(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "This is going to be legend... (wait for it)\n")
+	if fl, ok := w.(http.Flusher); ok {
+		fl.Flush()
+	}
+	time.Sleep(15 * time.Second)
+	io.WriteString(w, "...dary! Legendary!\n")
 }
 
 // AdminRoot is root (GET "/admin/root"). Much secret. Very administrate. Wow.
