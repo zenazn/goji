@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"code.google.com/p/go.net/context"
 
 	"github.com/goji/param"
 	"github.com/zenazn/goji"
@@ -101,9 +102,9 @@ func NewGreet(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUser finds a given user and her greets (GET "/user/:name")
-func GetUser(c web.C, w http.ResponseWriter, r *http.Request) {
+func GetUser(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Gritter\n======\n\n")
-	handle := c.URLParams["name"]
+	handle := web.URLParams(ctx)["name"]
 	user, ok := Users[handle]
 	if !ok {
 		http.Error(w, http.StatusText(404), 404)
@@ -122,8 +123,9 @@ func GetUser(c web.C, w http.ResponseWriter, r *http.Request) {
 
 // GetGreet finds a particular greet by ID (GET "/greet/\d+"). Does no bounds
 // checking, so will probably panic.
-func GetGreet(c web.C, w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(c.URLParams["id"])
+func GetGreet(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	params := web.URLParams(ctx)
+	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		http.Error(w, http.StatusText(404), 404)
 		return
