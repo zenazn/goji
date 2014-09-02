@@ -15,6 +15,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	go func() {
 		<-kill
 		l.Close()
+		idleSet.killall()
 	}()
 	l = WrapListener(l)
 

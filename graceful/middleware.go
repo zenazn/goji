@@ -103,7 +103,7 @@ func (f *fancyWriter) Hijack() (c net.Conn, b *bufio.ReadWriter, e error) {
 	hj := f.basicWriter.ResponseWriter.(http.Hijacker)
 	c, b, e = hj.Hijack()
 
-	if conn, ok := c.(hijackConn); ok {
+	if conn, ok := c.(*conn); ok {
 		c = conn.hijack()
 	}
 
