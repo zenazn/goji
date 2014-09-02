@@ -162,6 +162,9 @@ func (c *conn) Read(b []byte) (n int, err error) {
 
 		if c.state == csWaiting {
 			c.state = csWorking
+		} else if c.state == csDead {
+			n = 0
+			err = io.EOF
 		}
 	}()
 
