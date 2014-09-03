@@ -74,9 +74,11 @@ func New() *Mux {
 	return &mux
 }
 
+var bgctx = context.Background()
+
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
-	stack.ServeHTTPC(context.Background(), w, r)
+	stack.ServeHTTPC(bgctx, w, r)
 	m.mStack.release(stack)
 }
 

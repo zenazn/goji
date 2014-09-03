@@ -44,7 +44,6 @@ type cStack struct {
 }
 
 func (s *cStack) ServeHTTPC(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	s.ctx = ctx
 	s.m.ServeHTTPC(ctx, w, r)
 }
 
@@ -88,7 +87,6 @@ func (m *mStack) invalidate() {
 
 func (m *mStack) newStack() *cStack {
 	cs := cStack{}
-	cs.ctx = context.Background()
 	router := m.router
 
 	cs.m = HandlerFunc(router.route)
