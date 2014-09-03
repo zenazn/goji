@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"testing"
 	"time"
@@ -279,23 +280,17 @@ var validMethodsTable = map[string][]string{
 	"/does/not/compute": {},
 }
 
-/*
 func TestValidMethods(t *testing.T) {
 	t.Parallel()
 	rt := makeRouter()
 	ch := make(chan []string, 1)
 
 	rt.NotFound(func(c context.Context, w http.ResponseWriter, r *http.Request) {
-		if c.Env == nil {
-			ch <- []string{}
-			return
+		methods := ValidMethods(c)
+		if methods == nil {
+			methods = []string{}
 		}
-		methods, ok := c.Env[ValidMethodsKey]
-		if !ok {
-			ch <- []string{}
-			return
-		}
-		ch <- methods.([]string)
+		ch <- methods
 	})
 
 	rt.Get("/hello/carl", http.NotFound)
@@ -309,7 +304,7 @@ func TestValidMethods(t *testing.T) {
 	rt.Delete("/:greet/:anyone", http.NotFound)
 
 	for path, eMethods := range validMethodsTable {
-		r, _ := http.NewRequest("BOGUS", path, nil)
+		r, _ := http.NewRequest("OPTIONS", path, nil)
 		rt.route(context.Background(), httptest.NewRecorder(), r)
 		aMethods := <-ch
 		if !reflect.DeepEqual(eMethods, aMethods) {
@@ -318,4 +313,3 @@ func TestValidMethods(t *testing.T) {
 		}
 	}
 }
-*/
