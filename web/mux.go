@@ -2,6 +2,8 @@ package web
 
 import (
 	"net/http"
+
+	"code.google.com/p/go.net/context"
 )
 
 /*
@@ -27,7 +29,7 @@ accepted by those functions are documented here.
 A middleware (the untyped parameter in Use() and Insert()) must be one of the
 following types:
 	- func(http.Handler) http.Handler
-	- func(c *web.C, http.Handler) http.Handler
+	- func(web.Handler) web.Handler
 All of the route-adding functions on Mux take two untyped parameters: pattern
 and handler. Pattern must be one of the following types:
 	- string. It will be interpreted as a Sinatra-like pattern. In
@@ -49,7 +51,7 @@ Handler must be one of the following types:
 	- http.Handler
 	- web.Handler
 	- func(w http.ResponseWriter, r *http.Request)
-	- func(c web.C, w http.ResponseWriter, r *http.Request)
+	- func(c context.Context, w http.ResponseWriter, r *http.Request)
 */
 type Mux struct {
 	mStack
@@ -60,7 +62,7 @@ type Mux struct {
 func New() *Mux {
 	mux := Mux{
 		mStack: mStack{
-			stack: make([]mLayer, 0),
+			stack: make([]interface{}, 0),
 			pool:  makeCPool(),
 		},
 		router: router{
@@ -72,15 +74,17 @@ func New() *Mux {
 	return &mux
 }
 
+var bgctx = context.Background()
+
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
-	stack.ServeHTTP(w, r)
+	stack.ServeHTTPC(bgctx, w, r)
 	m.mStack.release(stack)
 }
 
 // ServeHTTPC creates a context dependent request with the given Mux. Satisfies
 // the web.Handler interface.
-func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
+func (m *Mux) ServeHTTPC(c context.Context, w http.ResponseWriter, r *http.Request) {
 	stack := m.mStack.alloc()
 	stack.ServeHTTPC(c, w, r)
 	m.mStack.release(stack)

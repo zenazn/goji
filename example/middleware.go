@@ -4,8 +4,6 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strings"
-
-	"github.com/zenazn/goji/web"
 )
 
 // PlainText sets the content-type of responses to text/plain.
@@ -21,7 +19,7 @@ func PlainText(h http.Handler) http.Handler {
 const Password = "admin:admin"
 
 // SuperSecure is HTTP Basic Auth middleware for super-secret admin page. Shhhh!
-func SuperSecure(c *web.C, h http.Handler) http.Handler {
+func SuperSecure(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if !strings.HasPrefix(auth, "Basic ") {

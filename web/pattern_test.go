@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+
+	"code.google.com/p/go.net/context"
 )
 
 func pt(url string, match bool, params map[string]string) patternTest {
@@ -16,16 +18,16 @@ func pt(url string, match bool, params map[string]string) patternTest {
 	return patternTest{
 		r:     req,
 		match: match,
-		c:     &C{},
-		cout:  &C{URLParams: params},
+		c:     context.Background(),
+		cout:  params,
 	}
 }
 
 type patternTest struct {
 	r     *http.Request
 	match bool
-	c     *C
-	cout  *C
+	c     context.Context
+	cout  map[string]string
 }
 
 var patternTests = []struct {
@@ -162,15 +164,14 @@ func TestPatterns(t *testing.T) {
 }
 
 func runTest(t *testing.T, p Pattern, test patternTest) {
-	result := p.Match(test.r, test.c)
+	cout, result := p.Match(test.r, test.c)
 	if result != test.match {
 		t.Errorf("Expected match(%v, %#v) to return %v", p,
 			test.r.URL.Path, test.match)
 		return
 	}
-	p.Run(test.r, test.c)
 
-	if !reflect.DeepEqual(test.c, test.cout) {
+	if !reflect.DeepEqual(URLParams(cout), test.cout) {
 		t.Errorf("Expected a context of %v, instead got %v", test.cout,
 			test.c)
 	}

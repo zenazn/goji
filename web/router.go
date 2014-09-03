@@ -4,12 +4,15 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
+
+	"code.google.com/p/go.net/context"
 )
 
 type method int
+
+type methodSet int
 
 const (
 	mCONNECT method = 1 << iota
@@ -28,10 +31,6 @@ const (
 	mALL method = mCONNECT | mDELETE | mGET | mHEAD | mOPTIONS | mPATCH |
 		mPOST | mPUT | mTRACE | mIDK
 )
-
-// The key used to communicate to the NotFound handler what methods would have
-// been allowed if they'd been provided.
-const ValidMethodsKey = "goji.web.validMethods"
 
 var validMethodsMap = map[string]method{
 	"CONNECT": mCONNECT,
@@ -81,10 +80,8 @@ type Pattern interface {
 	// decision. Match should not modify either argument, and since it will
 	// potentially be called several times over the course of matching a
 	// request, it should be reasonably efficient.
-	Match(r *http.Request, c *C) bool
-	// Run the pattern on the request and context, modifying the context as
-	// necessary to bind URL parameters or other parsed state.
-	Run(r *http.Request, c *C)
+	// If the request satisfies the pattern the new context is returned by run
+	Match(r *http.Request, ctx context.Context) (context.Context, bool)
 }
 
 func parsePattern(p interface{}) Pattern {
@@ -102,32 +99,25 @@ func parsePattern(p interface{}) Pattern {
 	panic("log.Fatalf does not return")
 }
 
-type netHTTPWrap struct {
-	http.Handler
-}
+type netHTTPWrap func(w http.ResponseWriter, r *http.Request)
 
-func (h netHTTPWrap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.Handler.ServeHTTP(w, r)
-}
-func (h netHTTPWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
-	h.Handler.ServeHTTP(w, r)
+func (h netHTTPWrap) ServeHTTPC(c context.Context, w http.ResponseWriter, r *http.Request) {
+	h(w, r)
 }
 
 func parseHandler(h interface{}) Handler {
-	switch h.(type) {
+	switch f := h.(type) {
 	case Handler:
-		return h.(Handler)
+		return f
 	case http.Handler:
-		return netHTTPWrap{h.(http.Handler)}
-	case func(c C, w http.ResponseWriter, r *http.Request):
-		f := h.(func(c C, w http.ResponseWriter, r *http.Request))
+		return netHTTPWrap(f.ServeHTTP)
+	case func(c context.Context, w http.ResponseWriter, r *http.Request):
 		return HandlerFunc(f)
 	case func(w http.ResponseWriter, r *http.Request):
-		f := h.(func(w http.ResponseWriter, r *http.Request))
-		return netHTTPWrap{http.HandlerFunc(f)}
+		return netHTTPWrap(f)
 	default:
-		log.Fatalf("Unknown handler type %v. Expected a web.Handler, "+
-			"a http.Handler, or a function with signature func(C, "+
+		log.Panicf("Unknown handler type %T. Expected a web.Handler, "+
+			"a http.Handler, or a function with signature func(context.Context, "+
 			"http.ResponseWriter, *http.Request) or "+
 			"func(http.ResponseWriter, *http.Request)", h)
 	}
@@ -146,22 +136,25 @@ type routeMachine struct {
 	routes []route
 }
 
-func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
-	if !route.pattern.Match(r, c) {
-		return false
+func matchRoute(route route, m method, ms *methodSet, r *http.Request, c context.Context) (context.Context, bool) {
+	nc, ok := route.pattern.Match(r, c)
+	if !ok {
+		return c, false
 	}
-	*ms |= route.method
+
+	if m == mOPTIONS {
+		*ms |= methodSet(route.method)
+	}
 
 	if route.method&m != 0 {
-		route.pattern.Run(r, c)
-		return true
+		return nc, true
 	}
-	return false
+	return nc, false
 }
 
-func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, bool) {
+func (rm routeMachine) route(c context.Context, w http.ResponseWriter, r *http.Request) (methodSet, bool) {
 	m := httpMethod(r.Method)
-	var methods method
+	var methods methodSet
 	p := r.URL.Path
 
 	if len(rm.sm) == 0 {
@@ -206,8 +199,8 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 
 		if match && sm&smRoute != 0 {
 			si := rm.sm[i].i
-			if matchRoute(rm.routes[si], m, &methods, r, c) {
-				rm.routes[si].handler.ServeHTTPC(*c, w, r)
+			if c, ok := matchRoute(rm.routes[si], m, &methods, r, c); ok {
+				rm.routes[si].handler.ServeHTTPC(c, w, r)
 				return 0, true
 			}
 			i++
@@ -241,38 +234,22 @@ func (rt *router) Compile() *routeMachine {
 	return &sm
 }
 
-func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
+func (rt *router) route(c context.Context, w http.ResponseWriter, r *http.Request) {
 	rm := rt.getMachine()
 	if rm == nil {
 		rm = rt.Compile()
 	}
 
-	methods, ok := rm.route(c, w, r)
+	ms, ok := rm.route(c, w, r)
 	if ok {
 		return
 	}
 
-	if methods == 0 {
-		rt.notFound.ServeHTTPC(*c, w, r)
-		return
+	if ms != 0 {
+		c = context.WithValue(c, validMethodsKey, ms)
 	}
 
-	var methodsList = make([]string, 0)
-	for mname, meth := range validMethodsMap {
-		if methods&meth != 0 {
-			methodsList = append(methodsList, mname)
-		}
-	}
-	sort.Strings(methodsList)
-
-	if c.Env == nil {
-		c.Env = map[string]interface{}{
-			ValidMethodsKey: methodsList,
-		}
-	} else {
-		c.Env[ValidMethodsKey] = methodsList
-	}
-	rt.notFound.ServeHTTPC(*c, w, r)
+	rt.notFound.ServeHTTPC(c, w, r)
 }
 
 func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {

@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"regexp/syntax"
 	"strings"
+
+	"code.google.com/p/go.net/context"
 )
 
 type regexpPattern struct {
@@ -19,30 +21,25 @@ type regexpPattern struct {
 func (p regexpPattern) Prefix() string {
 	return p.prefix
 }
-func (p regexpPattern) Match(r *http.Request, c *C) bool {
-	return p.match(r, c, false)
-}
-func (p regexpPattern) Run(r *http.Request, c *C) {
-	p.match(r, c, false)
+func (p regexpPattern) Match(r *http.Request, c context.Context) (context.Context, bool) {
+	return p.match(r, c)
 }
 
-func (p regexpPattern) match(r *http.Request, c *C, dryrun bool) bool {
+func (p regexpPattern) match(r *http.Request, c context.Context) (context.Context, bool) {
 	matches := p.re.FindStringSubmatch(r.URL.Path)
 	if matches == nil || len(matches) == 0 {
-		return false
+		return c, false
 	}
 
-	if c == nil || dryrun || len(matches) == 1 {
-		return true
+	if len(matches) == 1 {
+		return c, true
 	}
 
-	if c.URLParams == nil {
-		c.URLParams = make(map[string]string, len(matches)-1)
-	}
+	urlParams := make(map[string]string, len(matches)-1)
 	for i := 1; i < len(matches); i++ {
-		c.URLParams[p.names[i]] = matches[i]
+		urlParams[p.names[i]] = matches[i]
 	}
-	return true
+	return withURLParams(c, urlParams), true
 }
 
 func (p regexpPattern) String() string {
@@ -155,13 +152,13 @@ type stringPattern struct {
 func (s stringPattern) Prefix() string {
 	return s.literals[0]
 }
-func (s stringPattern) Match(r *http.Request, c *C) bool {
-	return s.match(r, c, true)
+func (s stringPattern) Match(r *http.Request, c context.Context) (context.Context, bool) {
+	if _, ok := s.match(r, c, true); !ok {
+		return c, ok
+	}
+	return s.match(r, c, false)
 }
-func (s stringPattern) Run(r *http.Request, c *C) {
-	s.match(r, c, false)
-}
-func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
+func (s stringPattern) match(r *http.Request, c context.Context, dryrun bool) (context.Context, bool) {
 	path := r.URL.Path
 	var matches map[string]string
 	if !dryrun && len(s.pats) > 0 {
@@ -170,7 +167,7 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 	for i := 0; i < len(s.pats); i++ {
 		sli := s.literals[i]
 		if !strings.HasPrefix(path, sli) {
-			return false
+			return c, false
 		}
 		path = path[len(sli):]
 
@@ -183,7 +180,7 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 		if m == 0 {
 			// Empty strings are not matches, otherwise routes like
 			// "/:foo" would match the path "/"
-			return false
+			return c, false
 		}
 		if !dryrun {
 			matches[s.pats[i]] = path[:m]
@@ -193,26 +190,19 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 	// There's exactly one more literal than pat.
 	if s.isPrefix {
 		if !strings.HasPrefix(path, s.literals[len(s.pats)]) {
-			return false
+			return c, false
 		}
 	} else {
 		if path != s.literals[len(s.pats)] {
-			return false
+			return c, false
 		}
 	}
 
-	if c == nil || dryrun {
-		return true
+	if c == nil || dryrun || len(s.pats) == 0 {
+		return c, true
 	}
 
-	if c.URLParams == nil {
-		c.URLParams = matches
-	} else {
-		for k, v := range matches {
-			c.URLParams[k] = v
-		}
-	}
-	return true
+	return withURLParams(c, matches), true
 }
 
 func (s stringPattern) String() string {

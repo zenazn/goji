@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 	"github.com/zenazn/goji/web/util"
@@ -16,16 +17,16 @@ import (
 // print in color, otherwise it will print in black and white.
 //
 // Logger prints a request ID if one is provided.
-func Logger(c *web.C, h http.Handler) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		reqID := GetReqID(*c)
+func Logger(h web.Handler) web.Handler {
+	fn := func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		reqID := GetReqID(ctx)
 
 		printStart(reqID, r)
 
 		lw := util.WrapWriter(w)
 
 		t1 := time.Now()
-		h.ServeHTTP(lw, r)
+		h.ServeHTTPC(ctx, lw, r)
 
 		if lw.Status() == 0 {
 			lw.WriteHeader(http.StatusOK)
@@ -35,7 +36,7 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 		printEnd(reqID, lw, t2.Sub(t1))
 	}
 
-	return http.HandlerFunc(fn)
+	return web.HandlerFunc(fn)
 }
 
 func printStart(reqID string, r *http.Request) {

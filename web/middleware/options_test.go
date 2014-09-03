@@ -4,79 +4,68 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"code.google.com/p/go.net/context"
 
 	"github.com/zenazn/goji/web"
 )
 
-func testOptions(r *http.Request, f func(*web.C, http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
-	var c web.C
-
-	h := func(w http.ResponseWriter, r *http.Request) {
-		f(&c, w, r)
-	}
-	m := AutomaticOptions(&c, http.HandlerFunc(h))
+func testOptions(m http.Handler, method string, path string) *httptest.ResponseRecorder {
+	r, _ := http.NewRequest(method, path, nil)
 	w := httptest.NewRecorder()
 	m.ServeHTTP(w, r)
-
 	return w
 }
 
-var optionsTestEnv = map[string]interface{}{
-	web.ValidMethodsKey: []string{
-		"hello",
-		"world",
-	},
-}
-
 func TestAutomaticOptions(t *testing.T) {
-	t.Parallel()
+	m := web.New()
+	m.NotFound(AutomaticOptions)
+	m.Get("/path/1", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("get1"))
+	})
+	m.Post("/path/1", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("post1"))
+	})
+	m.Options("/path/1", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("options1"))
+	})
+	m.Get("/path/2", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("get2"))
+	})
+	m.Post("/path/2", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("post2"))
+	})
+	m.Put("/path/*", func(c context.Context, w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("patch2"))
+	})
 
 	// Shouldn't interfere with normal requests
-	r, _ := http.NewRequest("GET", "/", nil)
-	rr := testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte{'h', 'i'})
-		},
-	)
+	rr := testOptions(m, "GET", "/path/1")
 	if rr.Code != http.StatusOK {
 		t.Errorf("status is %d, not 200", rr.Code)
 	}
-	if rr.Body.String() != "hi" {
-		t.Errorf("body was %q, should be %q", rr.Body.String(), "hi")
+	if rr.Body.String() != "get1" {
+		t.Errorf("body was %q, should be %q", rr.Body.String(), "get1")
 	}
 	allow := rr.HeaderMap.Get("Allow")
 	if allow != "" {
 		t.Errorf("Allow header was set to %q, should be empty", allow)
 	}
 
-	// If we respond non-404 to an OPTIONS request, also don't interfere
-	r, _ = http.NewRequest("OPTIONS", "/", nil)
-	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			c.Env = optionsTestEnv
-			w.Write([]byte{'h', 'i'})
-		},
-	)
+	// If we respond to an OPTIONS request, check that we don't interfere
+	rr = testOptions(m, "OPTIONS", "/path/1")
 	if rr.Code != http.StatusOK {
 		t.Errorf("status is %d, not 200", rr.Code)
 	}
-	if rr.Body.String() != "hi" {
-		t.Errorf("body was %q, should be %q", rr.Body.String(), "hi")
+	if rr.Body.String() != "options1" {
+		t.Errorf("body was %q, should be %q", rr.Body.String(), "options1")
 	}
 	allow = rr.HeaderMap.Get("Allow")
 	if allow != "" {
 		t.Errorf("Allow header was set to %q, should be empty", allow)
 	}
 
-	// Provide options if we 404. Make sure we nom the output bytes
-	r, _ = http.NewRequest("OPTIONS", "/", nil)
-	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			c.Env = optionsTestEnv
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte{'h', 'i'})
-		},
-	)
+	// Provide options if we 404. Make sure we have all the registered routes
+	rr = testOptions(m, "OPTIONS", "/path/2")
 	if rr.Code != http.StatusOK {
 		t.Errorf("status is %d, not 200", rr.Code)
 	}
@@ -84,29 +73,10 @@ func TestAutomaticOptions(t *testing.T) {
 		t.Errorf("body was %q, should be empty", rr.Body.String())
 	}
 	allow = rr.HeaderMap.Get("Allow")
-	correctHeaders := "hello, world, OPTIONS"
-	if allow != "hello, world, OPTIONS" {
+	correctHeaders := "GET, HEAD, POST, PUT, OPTIONS"
+	if allow != correctHeaders {
 		t.Errorf("Allow header should be %q, was %q", correctHeaders,
 			allow)
 	}
 
-	// If we somehow 404 without giving a list of valid options, don't do
-	// anything
-	r, _ = http.NewRequest("OPTIONS", "/", nil)
-	rr = testOptions(r,
-		func(c *web.C, w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte{'h', 'i'})
-		},
-	)
-	if rr.Code != http.StatusNotFound {
-		t.Errorf("status is %d, not 404", rr.Code)
-	}
-	if rr.Body.String() != "hi" {
-		t.Errorf("body was %q, should be %q", rr.Body.String(), "hi")
-	}
-	allow = rr.HeaderMap.Get("Allow")
-	if allow != "" {
-		t.Errorf("Allow header was set to %q, should be empty", allow)
-	}
 }
