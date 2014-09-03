@@ -164,13 +164,12 @@ func TestPatterns(t *testing.T) {
 }
 
 func runTest(t *testing.T, p Pattern, test patternTest) {
-	result := p.Match(test.r, test.c)
+	cout, result := p.Match(test.r, test.c)
 	if result != test.match {
 		t.Errorf("Expected match(%v, %#v) to return %v", p,
 			test.r.URL.Path, test.match)
 		return
 	}
-	cout := p.Run(test.r, test.c)
 
 	if !reflect.DeepEqual(URLParams(cout), test.cout) {
 		t.Errorf("Expected a context of %v, instead got %v", test.cout,

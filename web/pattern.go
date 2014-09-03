@@ -21,34 +21,25 @@ type regexpPattern struct {
 func (p regexpPattern) Prefix() string {
 	return p.prefix
 }
-func (p regexpPattern) Match(r *http.Request, c context.Context) bool {
-	_, ok := p.match(r, c, false)
-	return ok
-}
-func (p regexpPattern) Run(r *http.Request, c context.Context) context.Context {
-	c, _ = p.match(r, c, false)
-	return c
+func (p regexpPattern) Match(r *http.Request, c context.Context) (context.Context, bool) {
+	return p.match(r, c)
 }
 
-func (p regexpPattern) match(r *http.Request, c context.Context, dryrun bool) (context.Context, bool) {
+func (p regexpPattern) match(r *http.Request, c context.Context) (context.Context, bool) {
 	matches := p.re.FindStringSubmatch(r.URL.Path)
 	if matches == nil || len(matches) == 0 {
 		return c, false
 	}
 
-	if c == nil || dryrun || len(matches) == 1 {
+	if len(matches) == 1 {
 		return c, true
 	}
 
-	urlParams := URLParams(c)
-	if urlParams == nil {
-		urlParams = make(map[string]string, len(matches)-1)
-		c = withURLParams(c, urlParams)
-	}
+	urlParams := make(map[string]string, len(matches)-1)
 	for i := 1; i < len(matches); i++ {
 		urlParams[p.names[i]] = matches[i]
 	}
-	return c, true
+	return withURLParams(c, urlParams), true
 }
 
 func (p regexpPattern) String() string {
@@ -161,13 +152,11 @@ type stringPattern struct {
 func (s stringPattern) Prefix() string {
 	return s.literals[0]
 }
-func (s stringPattern) Match(r *http.Request, c context.Context) bool {
-	_, ok := s.match(r, c, true)
-	return ok
-}
-func (s stringPattern) Run(r *http.Request, c context.Context) context.Context {
-	c, _ = s.match(r, c, false)
-	return c
+func (s stringPattern) Match(r *http.Request, c context.Context) (context.Context, bool) {
+	if _, ok := s.match(r, c, true); !ok {
+		return c, ok
+	}
+	return s.match(r, c, false)
 }
 func (s stringPattern) match(r *http.Request, c context.Context, dryrun bool) (context.Context, bool) {
 	path := r.URL.Path
@@ -213,16 +202,7 @@ func (s stringPattern) match(r *http.Request, c context.Context, dryrun bool) (c
 		return c, true
 	}
 
-	urlParams := URLParams(c)
-	if urlParams == nil {
-		urlParams = matches
-		c = withURLParams(c, urlParams)
-	} else {
-		for k, v := range matches {
-			urlParams[k] = v
-		}
-	}
-	return c, true
+	return withURLParams(c, matches), true
 }
 
 func (s stringPattern) String() string {

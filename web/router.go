@@ -80,11 +80,8 @@ type Pattern interface {
 	// decision. Match should not modify either argument, and since it will
 	// potentially be called several times over the course of matching a
 	// request, it should be reasonably efficient.
-	Match(r *http.Request, ctx context.Context) bool
-	// Run the pattern on the request and context. The context is extended as
-	// necessary to bind URL parameters or other parsed state.
-	// The new context is returned by run
-	Run(r *http.Request, ctx context.Context) context.Context
+	// If the request satisfies the pattern the new context is returned by run
+	Match(r *http.Request, ctx context.Context) (context.Context, bool)
 }
 
 func parsePattern(p interface{}) Pattern {
@@ -140,7 +137,8 @@ type routeMachine struct {
 }
 
 func matchRoute(route route, m method, ms *methodSet, r *http.Request, c context.Context) (context.Context, bool) {
-	if !route.pattern.Match(r, c) {
+	nc, ok := route.pattern.Match(r, c)
+	if !ok {
 		return c, false
 	}
 
@@ -149,10 +147,9 @@ func matchRoute(route route, m method, ms *methodSet, r *http.Request, c context
 	}
 
 	if route.method&m != 0 {
-		c = route.pattern.Run(r, c)
-		return c, true
+		return nc, true
 	}
-	return c, false
+	return nc, false
 }
 
 func (rm routeMachine) route(c context.Context, w http.ResponseWriter, r *http.Request) (methodSet, bool) {
