@@ -14,6 +14,8 @@ type WriterProxy interface {
 	// Status returns the HTTP status of the request, or 0 if one has not
 	// yet been sent.
 	Status() int
+	// BytesWritten returns the total number of bytes sent to the client.
+	BytesWritten() int
 	// Tee causes the response body to be written to the given io.Writer in
 	// addition to proxying the writes through. Only one io.Writer can be
 	// tee'd to at once: setting a second one will overwrite the first.
@@ -46,6 +48,7 @@ type basicWriter struct {
 	http.ResponseWriter
 	wroteHeader bool
 	code        int
+	bytes       int
 	tee         io.Writer
 }
 
@@ -66,6 +69,7 @@ func (b *basicWriter) Write(buf []byte) (int, error) {
 			err = err2
 		}
 	}
+	b.bytes += n
 	return n, err
 }
 func (b *basicWriter) maybeWriteHeader() {
@@ -75,6 +79,9 @@ func (b *basicWriter) maybeWriteHeader() {
 }
 func (b *basicWriter) Status() int {
 	return b.code
+}
+func (b *basicWriter) BytesWritten() int {
+	return b.bytes
 }
 func (b *basicWriter) Tee(w io.Writer) {
 	b.tee = w
