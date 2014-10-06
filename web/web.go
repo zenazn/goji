@@ -99,6 +99,8 @@ type C struct {
 	// capture is used, it will be assigned to the special identifiers "$1",
 	// "$2", etc.
 	URLParams map[string]string
+	// The pattern that was matched.
+	Pattern string
 	// A free-form environment, similar to Rack or PEP 333's environments.
 	// Middleware layers are encouraged to pass data to downstream layers
 	// and other handlers using this map, and are even more strongly
