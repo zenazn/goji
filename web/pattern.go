@@ -205,6 +205,7 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 		return true
 	}
 
+	c.Pattern = s.raw
 	if c.URLParams == nil {
 		c.URLParams = matches
 	} else {
