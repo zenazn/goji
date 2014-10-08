@@ -52,14 +52,8 @@ func init() {
 // of the default socket will be reasonable for use in your circumstance.
 func WithFlag() {
 	defaultBind := ":8000"
-	if bind := os.Getenv("GOJI_BIND"); bind != "" {
-		defaultBind = bind
-	} else if usingEinhorn() {
-		defaultBind = "einhorn@0"
-	} else if usingSystemd() {
-		defaultBind = "fd@3"
-	} else if port := os.Getenv("PORT"); port != "" {
-		defaultBind = ":" + port
+	if s := Sniff(); s != "" {
+		defaultBind = s
 	}
 	flag.StringVar(&bind, "bind", defaultBind,
 		`Address to bind on. If this value has a colon, as in ":8000" or
@@ -72,6 +66,24 @@ func WithFlag() {
 		used. If an option is not explicitly passed, the implementation
 		will automatically select among "einhorn@0" (Einhorn), "fd@3"
 		(systemd), and ":8000" (fallback) based on its environment.`)
+}
+
+// Sniff attempts to select a sensible default bind string by examining its
+// environment. It examines the GOJI_BIND environment variable, Einhorn,
+// systemd, and the PORT environment variable, in that order, selecting the
+// first plausible option. It returns the empty string if no sensible default
+// could be extracted from the environment.
+func Sniff() string {
+	if bind := os.Getenv("GOJI_BIND"); bind != "" {
+		return bind
+	} else if usingEinhorn() {
+		return "einhorn@0"
+	} else if usingSystemd() {
+		return "fd@3"
+	} else if port := os.Getenv("PORT"); port != "" {
+		return ":" + port
+	}
+	return ""
 }
 
 func listenTo(bind string) (net.Listener, error) {
