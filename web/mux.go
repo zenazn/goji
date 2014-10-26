@@ -220,6 +220,6 @@ func (m *Mux) NotFound(handler interface{}) {
 // after all the routes have been added, and will be called automatically for
 // you (at some performance cost on the first request) if you do not call it
 // explicitly.
-func (rt *router) Compile() {
-	rt.compile()
+func (m *Mux) Compile() {
+	m.rt.compile()
 }
