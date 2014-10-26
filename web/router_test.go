@@ -11,13 +11,6 @@ import (
 
 // These tests can probably be DRY'd up a bunch
 
-func makeRouter() *router {
-	return &router{
-		routes:   make([]route, 0),
-		notFound: parseHandler(http.NotFound),
-	}
-}
-
 func chHandler(ch chan string, s string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ch <- s
@@ -29,24 +22,24 @@ var methods = []string{"CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH",
 
 func TestMethods(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 	ch := make(chan string, 1)
 
-	rt.Connect("/", chHandler(ch, "CONNECT"))
-	rt.Delete("/", chHandler(ch, "DELETE"))
-	rt.Head("/", chHandler(ch, "HEAD"))
-	rt.Get("/", chHandler(ch, "GET"))
-	rt.Options("/", chHandler(ch, "OPTIONS"))
-	rt.Patch("/", chHandler(ch, "PATCH"))
-	rt.Post("/", chHandler(ch, "POST"))
-	rt.Put("/", chHandler(ch, "PUT"))
-	rt.Trace("/", chHandler(ch, "TRACE"))
-	rt.Handle("/", chHandler(ch, "OTHER"))
+	m.Connect("/", chHandler(ch, "CONNECT"))
+	m.Delete("/", chHandler(ch, "DELETE"))
+	m.Head("/", chHandler(ch, "HEAD"))
+	m.Get("/", chHandler(ch, "GET"))
+	m.Options("/", chHandler(ch, "OPTIONS"))
+	m.Patch("/", chHandler(ch, "PATCH"))
+	m.Post("/", chHandler(ch, "POST"))
+	m.Put("/", chHandler(ch, "PUT"))
+	m.Trace("/", chHandler(ch, "TRACE"))
+	m.Handle("/", chHandler(ch, "OTHER"))
 
 	for _, method := range methods {
 		r, _ := http.NewRequest(method, "/", nil)
 		w := httptest.NewRecorder()
-		rt.route(&C{}, w, r)
+		m.ServeHTTP(w, r)
 		select {
 		case val := <-ch:
 			if val != method {
@@ -74,12 +67,12 @@ var _ Pattern = testPattern{}
 
 func TestPatternTypes(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 
-	rt.Get("/hello/carl", http.NotFound)
-	rt.Get("/hello/:name", http.NotFound)
-	rt.Get(regexp.MustCompile(`^/hello/(?P<name>.+)$`), http.NotFound)
-	rt.Get(testPattern{}, http.NotFound)
+	m.Get("/hello/carl", http.NotFound)
+	m.Get("/hello/:name", http.NotFound)
+	m.Get(regexp.MustCompile(`^/hello/(?P<name>.+)$`), http.NotFound)
+	m.Get(testPattern{}, http.NotFound)
 }
 
 type testHandler chan string
@@ -101,27 +94,27 @@ var testHandlerTable = map[string]string{
 
 func TestHandlerTypes(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 	ch := make(chan string, 1)
 
-	rt.Get("/a", func(w http.ResponseWriter, r *http.Request) {
+	m.Get("/a", func(w http.ResponseWriter, r *http.Request) {
 		ch <- "http fn"
 	})
-	rt.Get("/b", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	m.Get("/b", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ch <- "http handler"
 	}))
-	rt.Get("/c", func(c C, w http.ResponseWriter, r *http.Request) {
+	m.Get("/c", func(c C, w http.ResponseWriter, r *http.Request) {
 		ch <- "web fn"
 	})
-	rt.Get("/d", HandlerFunc(func(c C, w http.ResponseWriter, r *http.Request) {
+	m.Get("/d", HandlerFunc(func(c C, w http.ResponseWriter, r *http.Request) {
 		ch <- "web handler"
 	}))
-	rt.Get("/e", testHandler(ch))
+	m.Get("/e", testHandler(ch))
 
 	for route, response := range testHandlerTable {
 		r, _ := http.NewRequest("GET", route, nil)
 		w := httptest.NewRecorder()
-		rt.route(&C{}, w, r)
+		m.ServeHTTP(w, r)
 		select {
 		case resp := <-ch:
 			if resp != response {
@@ -191,10 +184,10 @@ var _ http.Handler = rsPattern{}
 
 func TestRouteSelection(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 	counter := 0
 	ichan := make(chan int, 1)
-	rt.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		ichan <- -1
 	})
 
@@ -205,7 +198,7 @@ func TestRouteSelection(t *testing.T) {
 			prefix:  s,
 			ichan:   ichan,
 		}
-		rt.Get(pat, pat)
+		m.Get(pat, pat)
 	}
 
 	for _, test := range rsTests {
@@ -213,7 +206,7 @@ func TestRouteSelection(t *testing.T) {
 		for counter, n = range test.results {
 			r, _ := http.NewRequest("GET", test.key, nil)
 			w := httptest.NewRecorder()
-			rt.route(&C{}, w, r)
+			m.ServeHTTP(w, r)
 			actual := <-ichan
 			if n != actual {
 				t.Errorf("Expected %q @ %d to be %d, got %d",
@@ -225,22 +218,22 @@ func TestRouteSelection(t *testing.T) {
 
 func TestNotFound(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 
 	r, _ := http.NewRequest("post", "/", nil)
 	w := httptest.NewRecorder()
-	rt.route(&C{}, w, r)
+	m.ServeHTTP(w, r)
 	if w.Code != 404 {
 		t.Errorf("Expected 404, got %d", w.Code)
 	}
 
-	rt.NotFound(func(w http.ResponseWriter, r *http.Request) {
+	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "I'm a teapot!", http.StatusTeapot)
 	})
 
 	r, _ = http.NewRequest("POST", "/", nil)
 	w = httptest.NewRecorder()
-	rt.route(&C{}, w, r)
+	m.ServeHTTP(w, r)
 	if w.Code != http.StatusTeapot {
 		t.Errorf("Expected a teapot, got %d", w.Code)
 	}
@@ -248,16 +241,16 @@ func TestNotFound(t *testing.T) {
 
 func TestPrefix(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 	ch := make(chan string, 1)
 
-	rt.Handle("/hello*", func(w http.ResponseWriter, r *http.Request) {
+	m.Handle("/hello*", func(w http.ResponseWriter, r *http.Request) {
 		ch <- r.URL.Path
 	})
 
 	r, _ := http.NewRequest("GET", "/hello/world", nil)
 	w := httptest.NewRecorder()
-	rt.route(&C{}, w, r)
+	m.ServeHTTP(w, r)
 	select {
 	case val := <-ch:
 		if val != "/hello/world" {
@@ -278,10 +271,10 @@ var validMethodsTable = map[string][]string{
 
 func TestValidMethods(t *testing.T) {
 	t.Parallel()
-	rt := makeRouter()
+	m := New()
 	ch := make(chan []string, 1)
 
-	rt.NotFound(func(c C, w http.ResponseWriter, r *http.Request) {
+	m.NotFound(func(c C, w http.ResponseWriter, r *http.Request) {
 		if c.Env == nil {
 			ch <- []string{}
 			return
@@ -294,19 +287,19 @@ func TestValidMethods(t *testing.T) {
 		ch <- methods.([]string)
 	})
 
-	rt.Get("/hello/carl", http.NotFound)
-	rt.Post("/hello/carl", http.NotFound)
-	rt.Head("/hello/bob", http.NotFound)
-	rt.Get("/hello/:name", http.NotFound)
-	rt.Put("/hello/:name", http.NotFound)
-	rt.Patch("/hello/:name", http.NotFound)
-	rt.Get("/:greet/carl", http.NotFound)
-	rt.Put("/:greet/carl", http.NotFound)
-	rt.Delete("/:greet/:anyone", http.NotFound)
+	m.Get("/hello/carl", http.NotFound)
+	m.Post("/hello/carl", http.NotFound)
+	m.Head("/hello/bob", http.NotFound)
+	m.Get("/hello/:name", http.NotFound)
+	m.Put("/hello/:name", http.NotFound)
+	m.Patch("/hello/:name", http.NotFound)
+	m.Get("/:greet/carl", http.NotFound)
+	m.Put("/:greet/carl", http.NotFound)
+	m.Delete("/:greet/:anyone", http.NotFound)
 
 	for path, eMethods := range validMethodsTable {
 		r, _ := http.NewRequest("BOGUS", path, nil)
-		rt.route(&C{}, httptest.NewRecorder(), r)
+		m.ServeHTTP(httptest.NewRecorder(), r)
 		aMethods := <-ch
 		if !reflect.DeepEqual(eMethods, aMethods) {
 			t.Errorf("For %q, expected %v, got %v", path, eMethods,

@@ -53,7 +53,7 @@ Handler must be one of the following types:
 */
 type Mux struct {
 	ms mStack
-	router
+	rt router
 }
 
 // New creates a new Mux without any routes or middleware.
@@ -63,12 +63,12 @@ func New() *Mux {
 			stack: make([]mLayer, 0),
 			pool:  makeCPool(),
 		},
-		router: router{
+		rt: router{
 			routes:   make([]route, 0),
 			notFound: parseHandler(http.NotFound),
 		},
 	}
-	mux.ms.router = &mux.router
+	mux.ms.router = &mux.rt
 	return &mux
 }
 
@@ -117,4 +117,109 @@ func (m *Mux) Insert(middleware, before interface{}) error {
 // requests.
 func (m *Mux) Abandon(middleware interface{}) error {
 	return m.ms.Abandon(middleware)
+}
+
+// Router functions
+
+/*
+Dispatch to the given handler when the pattern matches, regardless of HTTP
+method. See the documentation for type Mux for a description of what types are
+accepted for pattern and handler.
+
+This method is commonly used to implement sub-routing: an admin application, for
+instance, can expose a single handler that is attached to the main Mux by
+calling Handle("/admin*", adminHandler) or similar. Note that this function
+doesn't strip this prefix from the path before forwarding it on (e.g., the
+handler will see the full path, including the "/admin" part), but this
+functionality can easily be performed by an extra middleware layer.
+*/
+func (m *Mux) Handle(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mALL, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// CONNECT. See the documentation for type Mux for a description of what types
+// are accepted for pattern and handler.
+func (m *Mux) Connect(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mCONNECT, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// DELETE. See the documentation for type Mux for a description of what types
+// are accepted for pattern and handler.
+func (m *Mux) Delete(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mDELETE, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// GET. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+//
+// All GET handlers also transparently serve HEAD requests, since net/http will
+// take care of all the fiddly bits for you. If you wish to provide an alternate
+// implementation of HEAD, you should add a handler explicitly and place it
+// above your GET handler.
+func (m *Mux) Get(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mGET|mHEAD, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// HEAD. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+func (m *Mux) Head(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mHEAD, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// OPTIONS. See the documentation for type Mux for a description of what types
+// are accepted for pattern and handler.
+func (m *Mux) Options(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mOPTIONS, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// PATCH. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+func (m *Mux) Patch(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mPATCH, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// POST. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+func (m *Mux) Post(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mPOST, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// PUT. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+func (m *Mux) Put(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mPUT, handler)
+}
+
+// Dispatch to the given handler when the pattern matches and the HTTP method is
+// TRACE. See the documentation for type Mux for a description of what types are
+// accepted for pattern and handler.
+func (m *Mux) Trace(pattern interface{}, handler interface{}) {
+	m.rt.handleUntyped(pattern, mTRACE, handler)
+}
+
+// Set the fallback (i.e., 404) handler for this mux. See the documentation for
+// type Mux for a description of what types are accepted for handler.
+//
+// As a convenience, the context environment variable "goji.web.validMethods"
+// (also available as the constant ValidMethodsKey) will be set to the list of
+// HTTP methods that could have been routed had they been provided on an
+// otherwise identical request.
+func (m *Mux) NotFound(handler interface{}) {
+	m.rt.notFound = parseHandler(handler)
+}
+
+// Compile the list of routes into bytecode. This only needs to be done once
+// after all the routes have been added, and will be called automatically for
+// you (at some performance cost on the first request) if you do not call it
+// explicitly.
+func (rt *router) Compile() {
+	rt.compile()
 }

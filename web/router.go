@@ -226,14 +226,6 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 	return methods, false
 }
 
-// Compile the list of routes into bytecode. This only needs to be done once
-// after all the routes have been added, and will be called automatically for
-// you (at some performance cost on the first request) if you do not call it
-// explicitly.
-func (rt *router) Compile() {
-	rt.compile()
-}
-
 func (rt *router) compile() *routeMachine {
 	rt.lock.Lock()
 	defer rt.lock.Unlock()
@@ -312,103 +304,4 @@ func (rt *router) handle(p Pattern, m method, h Handler) {
 
 	rt.setMachine(nil)
 	rt.routes = newRoutes
-}
-
-// This is a bit silly, but I've renamed the method receivers in the public
-// functions here "m" instead of the standard "rt", since they will eventually
-// be shown on the documentation for the Mux that they are included in.
-
-/*
-Dispatch to the given handler when the pattern matches, regardless of HTTP
-method. See the documentation for type Mux for a description of what types are
-accepted for pattern and handler.
-
-This method is commonly used to implement sub-routing: an admin application, for
-instance, can expose a single handler that is attached to the main Mux by
-calling Handle("/admin*", adminHandler) or similar. Note that this function
-doesn't strip this prefix from the path before forwarding it on (e.g., the
-handler will see the full path, including the "/admin" part), but this
-functionality can easily be performed by an extra middleware layer.
-*/
-func (rt *router) Handle(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mALL, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// CONNECT. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (rt *router) Connect(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mCONNECT, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// DELETE. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (rt *router) Delete(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mDELETE, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// GET. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-//
-// All GET handlers also transparently serve HEAD requests, since net/http will
-// take care of all the fiddly bits for you. If you wish to provide an alternate
-// implementation of HEAD, you should add a handler explicitly and place it
-// above your GET handler.
-func (rt *router) Get(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mGET|mHEAD, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// HEAD. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (rt *router) Head(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mHEAD, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// OPTIONS. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (rt *router) Options(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mOPTIONS, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// PATCH. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (rt *router) Patch(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mPATCH, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// POST. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (rt *router) Post(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mPOST, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// PUT. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (rt *router) Put(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mPUT, handler)
-}
-
-// Dispatch to the given handler when the pattern matches and the HTTP method is
-// TRACE. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (rt *router) Trace(pattern interface{}, handler interface{}) {
-	rt.handleUntyped(pattern, mTRACE, handler)
-}
-
-// Set the fallback (i.e., 404) handler for this mux. See the documentation for
-// type Mux for a description of what types are accepted for handler.
-//
-// As a convenience, the context environment variable "goji.web.validMethods"
-// (also available as the constant ValidMethodsKey) will be set to the list of
-// HTTP methods that could have been routed had they been provided on an
-// otherwise identical request.
-func (rt *router) NotFound(handler interface{}) {
-	rt.notFound = parseHandler(handler)
 }
