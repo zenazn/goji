@@ -52,14 +52,14 @@ Handler must be one of the following types:
 	- func(c web.C, w http.ResponseWriter, r *http.Request)
 */
 type Mux struct {
-	mStack
+	ms mStack
 	router
 }
 
 // New creates a new Mux without any routes or middleware.
 func New() *Mux {
 	mux := Mux{
-		mStack: mStack{
+		ms: mStack{
 			stack: make([]mLayer, 0),
 			pool:  makeCPool(),
 		},
@@ -68,20 +68,53 @@ func New() *Mux {
 			notFound: parseHandler(http.NotFound),
 		},
 	}
-	mux.mStack.router = &mux.router
+	mux.ms.router = &mux.router
 	return &mux
 }
 
+// ServeHTTP processes HTTP requests. It make Muxes satisfy net/http.Handler.
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	stack := m.mStack.alloc()
+	stack := m.ms.alloc()
 	stack.ServeHTTP(w, r)
-	m.mStack.release(stack)
+	m.ms.release(stack)
 }
 
 // ServeHTTPC creates a context dependent request with the given Mux. Satisfies
 // the web.Handler interface.
 func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
-	stack := m.mStack.alloc()
+	stack := m.ms.alloc()
 	stack.ServeHTTPC(c, w, r)
-	m.mStack.release(stack)
+	m.ms.release(stack)
+}
+
+// Middleware Stack functions
+
+// Append the given middleware to the middleware stack. See the documentation
+// for type Mux for a list of valid middleware types.
+//
+// No attempt is made to enforce the uniqueness of middlewares. It is illegal to
+// call this function concurrently with active requests.
+func (m *Mux) Use(middleware interface{}) {
+	m.ms.Use(middleware)
+}
+
+// Insert the given middleware immediately before a given existing middleware in
+// the stack. See the documentation for type Mux for a list of valid middleware
+// types. Returns an error if no middleware has the name given by "before."
+//
+// No attempt is made to enforce the uniqueness of middlewares. If the insertion
+// point is ambiguous, the first (outermost) one is chosen. It is illegal to
+// call this function concurrently with active requests.
+func (m *Mux) Insert(middleware, before interface{}) error {
+	return m.ms.Insert(middleware, before)
+}
+
+// Remove the given middleware from the middleware stack. Returns an error if
+// no such middleware can be found.
+//
+// If the name of the middleware to delete is ambiguous, the first (outermost)
+// one is chosen. It is illegal to call this function concurrently with active
+// requests.
+func (m *Mux) Abandon(middleware interface{}) error {
+	return m.ms.Abandon(middleware)
 }
