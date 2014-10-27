@@ -113,8 +113,9 @@ func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
 		rm = rt.compile()
 	}
 
-	methods, ok := rm.route(c, w, r)
-	if ok {
+	methods, route := rm.route(c, w, r)
+	if route != nil {
+		route.handler.ServeHTTPC(*c, w, r)
 		return
 	}
 

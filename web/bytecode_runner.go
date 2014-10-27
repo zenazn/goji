@@ -20,13 +20,13 @@ func matchRoute(route route, m method, ms *method, r *http.Request, c *C) bool {
 	return false
 }
 
-func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, bool) {
+func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (method, *route) {
 	m := httpMethod(r.Method)
 	var methods method
 	p := r.URL.Path
 
 	if len(rm.sm) == 0 {
-		return methods, false
+		return methods, nil
 	}
 
 	var i int
@@ -68,15 +68,14 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 		if match && sm&smRoute != 0 {
 			si := rm.sm[i].i
 			if matchRoute(rm.routes[si], m, &methods, r, c) {
-				rm.routes[si].handler.ServeHTTPC(*c, w, r)
-				return 0, true
+				return 0, &rm.routes[si]
 			}
 			i++
 		} else if (match && sm&smJumpOnMatch != 0) ||
 			(!match && sm&smJumpOnMatch == 0) {
 
 			if sm&smFail != 0 {
-				return methods, false
+				return methods, nil
 			}
 			i = int(rm.sm[i].i)
 		} else {
@@ -84,5 +83,5 @@ func (rm routeMachine) route(c *C, w http.ResponseWriter, r *http.Request) (meth
 		}
 	}
 
-	return methods, false
+	return methods, nil
 }
