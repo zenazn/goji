@@ -18,6 +18,7 @@ import (
 	"github.com/goji/param"
 	"github.com/zenazn/goji"
 	"github.com/zenazn/goji/web"
+	"github.com/zenazn/goji/web/middleware"
 )
 
 // Note: the code below cuts a lot of corners to make the example app simple.
@@ -40,21 +41,27 @@ func main() {
 	goji.Use(PlainText)
 
 	// If the patterns ends with "/*", the path is treated as a prefix, and
-	// can be used to implement sub-routes. Sub-routes can be used to set
-	// custom middleware on sub-applications. Goji's interfaces are
-	// completely composable.
+	// can be used to implement sub-routes.
 	admin := web.New()
 	goji.Handle("/admin/*", admin)
+
+	// The standard SubRouter middleware helps make writing sub-routers
+	// easy. Ordinarily, Goji does not manipulate the request's URL.Path,
+	// meaning you'd have to repeat "/admin/" in each of the following
+	// routes. This middleware allows you to cut down on the repetition by
+	// eliminating the shared, already-matched prefix.
+	admin.Use(middleware.SubRouter)
+	// You can also easily attach extra middleware to sub-routers that are
+	// not present on the parent router. This one, for instance, presents a
+	// password prompt to users of the admin endpoints.
 	admin.Use(SuperSecure)
+
+	admin.Get("/", AdminRoot)
+	admin.Get("/finances", AdminFinances)
 
 	// Goji's routing, like Sinatra's, is exact: no effort is made to
 	// normalize trailing slashes.
 	goji.Get("/admin", http.RedirectHandler("/admin/", 301))
-
-	// Set up admin routes. Note that sub-routes do *not* mutate the path in
-	// any way, so we need to supply full ("/admin/" prefixed) paths.
-	admin.Get("/admin/", AdminRoot)
-	admin.Get("/admin/finances", AdminFinances)
 
 	// Use a custom 404 handler
 	goji.NotFound(NotFound)
