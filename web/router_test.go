@@ -244,7 +244,7 @@ func TestPrefix(t *testing.T) {
 	m := New()
 	ch := make(chan string, 1)
 
-	m.Handle("/hello*", func(w http.ResponseWriter, r *http.Request) {
+	m.Handle("/hello/*", func(w http.ResponseWriter, r *http.Request) {
 		ch <- r.URL.Path
 	})
 

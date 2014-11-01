@@ -127,37 +127,29 @@ var patternTests = []struct {
 		}},
 
 	// String prefix tests
-	{parseStringPattern("/user/:user*"),
-		"/user/", []patternTest{
-			pt("/user/bob", true, map[string]string{
-				"user": "bob",
-			}),
-			pt("/user/bob/friends/123", true, map[string]string{
-				"user": "bob",
-			}),
-			pt("/user/", false, nil),
-			pt("/user//", false, nil),
-		}},
 	{parseStringPattern("/user/:user/*"),
 		"/user/", []patternTest{
+			pt("/user/bob/", true, map[string]string{
+				"user": "bob",
+				"*":    "/",
+			}),
 			pt("/user/bob/friends/123", true, map[string]string{
 				"user": "bob",
+				"*":    "/friends/123",
 			}),
 			pt("/user/bob", false, nil),
 			pt("/user/", false, nil),
 			pt("/user//", false, nil),
 		}},
-	{parseStringPattern("/user/:user/friends*"),
+	{parseStringPattern("/user/:user/friends/*"),
 		"/user/", []patternTest{
-			pt("/user/bob/friends", true, map[string]string{
+			pt("/user/bob/friends/", true, map[string]string{
 				"user": "bob",
+				"*":    "/",
 			}),
 			pt("/user/bob/friends/123", true, map[string]string{
 				"user": "bob",
-			}),
-			// This is a little unfortunate
-			pt("/user/bob/friends123", true, map[string]string{
-				"user": "bob",
+				"*":    "/123",
 			}),
 			pt("/user/bob/enemies", false, nil),
 		}},

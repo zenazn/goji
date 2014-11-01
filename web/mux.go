@@ -35,11 +35,14 @@ and handler. Pattern must be one of the following types:
 		- a path segment starting with with a colon will match any
 		  string placed at that position. e.g., "/:name" will match
 		  "/carl", binding "name" to "carl".
-		- a pattern ending with an asterisk will match any prefix of
-		  that route. For instance, "/admin/*" will match "/admin/" and
-		  "/admin/secret/lair". This is similar to Sinatra's wildcard,
-		  but may only appear at the very end of the string and is
-		  therefore significantly less powerful.
+		- a pattern ending with "/*" will match any route with that
+		  prefix. For instance, the pattern "/u/:name/*" will match
+		  "/u/carl/" and "/u/carl/projects/123", but not "/u/carl"
+		  (because there is no trailing slash). In addition to any names
+		  bound in the pattern, the special name "*" is bound to the
+		  unmatched tail of the match, but including the leading "/". So
+		  for the two matching examples above, "*" would be bound to "/"
+		  and "/projects/123" respectively.
 	- regexp.Regexp. The library assumes that it is a Perl-style regexp that
 	  is anchored on the left (i.e., the beginning of the string). If your
 	  regexp is not anchored on the left, a hopefully-identical

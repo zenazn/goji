@@ -39,10 +39,10 @@ func main() {
 	// can put them wherever you like.
 	goji.Use(PlainText)
 
-	// If the last character of a pattern is an asterisk, the path is
-	// treated as a prefix, and can be used to implement sub-routes.
-	// Sub-routes can be used to set custom middleware on sub-applications.
-	// Goji's interfaces are completely composable.
+	// If the patterns ends with "/*", the path is treated as a prefix, and
+	// can be used to implement sub-routes. Sub-routes can be used to set
+	// custom middleware on sub-applications. Goji's interfaces are
+	// completely composable.
 	admin := web.New()
 	goji.Handle("/admin/*", admin)
 	admin.Use(SuperSecure)
