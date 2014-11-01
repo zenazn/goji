@@ -93,6 +93,9 @@ var patternTests = []struct {
 			pt("/hello/world", true, map[string]string{
 				"name": "world",
 			}),
+			pt("/hello/my.world;wow", true, map[string]string{
+				"name": "my.world;wow",
+			}),
 			pt("/hell", false, nil),
 			pt("/hello/", false, nil),
 			pt("/hello/my/love", false, nil),
@@ -106,6 +109,21 @@ var patternTests = []struct {
 			pt("/a", false, nil),
 			pt("/a//b/", false, nil),
 			pt("/a/1/b/2/3", false, nil),
+		}},
+	{parseStringPattern("/a/:b.:c"),
+		"/a/", []patternTest{
+			pt("/a/cat.gif", true, map[string]string{
+				"b": "cat",
+				"c": "gif",
+			}),
+			pt("/a/cat.tar.gz", true, map[string]string{
+				"b": "cat",
+				"c": "tar.gz",
+			}),
+			pt("/a", false, nil),
+			pt("/a/cat", false, nil),
+			pt("/a/cat/gif", false, nil),
+			pt("/a/cat.", false, nil),
 		}},
 
 	// String prefix tests

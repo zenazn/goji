@@ -7,9 +7,11 @@ import (
 	"strings"
 )
 
+// stringPattern is a struct describing
 type stringPattern struct {
 	raw      string
 	pats     []string
+	breaks   []byte
 	literals []string
 	isPrefix bool
 }
@@ -37,8 +39,9 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 		path = path[len(sli):]
 
 		m := 0
+		bc := s.breaks[i]
 		for ; m < len(path); m++ {
-			if path[m] == '/' {
+			if path[m] == bc {
 				break
 			}
 		}
@@ -81,7 +84,13 @@ func (s stringPattern) String() string {
 	return fmt.Sprintf("stringPattern(%q, %v)", s.raw, s.isPrefix)
 }
 
-var patternRe = regexp.MustCompile(`/:([^/]+)`)
+// "Break characters" are characters that can end patterns. They are not allowed
+// to appear in pattern names. "/" was chosen because it is the standard path
+// separator, and "." was chosen because it often delimits file extensions. ";"
+// and "," were chosen because Section 3.3 of RFC 3986 suggests their use.
+const bc = "/.;,"
+
+var patternRe = regexp.MustCompile(`[` + bc + `]:([^` + bc + `]+)`)
 
 func parseStringPattern(s string) stringPattern {
 	var isPrefix bool
@@ -93,18 +102,25 @@ func parseStringPattern(s string) stringPattern {
 
 	matches := patternRe.FindAllStringSubmatchIndex(s, -1)
 	pats := make([]string, len(matches))
+	breaks := make([]byte, len(matches))
 	literals := make([]string, len(matches)+1)
 	n := 0
 	for i, match := range matches {
 		a, b := match[2], match[3]
 		literals[i] = s[n : a-1] // Need to leave off the colon
 		pats[i] = s[a:b]
+		if b == len(s) {
+			breaks[i] = '/'
+		} else {
+			breaks[i] = s[b]
+		}
 		n = b
 	}
 	literals[len(matches)] = s[n:]
 	return stringPattern{
 		raw:      s,
 		pats:     pats,
+		breaks:   breaks,
 		literals: literals,
 		isPrefix: isPrefix,
 	}
