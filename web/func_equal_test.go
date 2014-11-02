@@ -79,6 +79,6 @@ func TestFuncEqual(t *testing.T) {
 		t.Errorf("h and j should not have been equal")
 	}
 	if !funcEqual(a, k) {
-		t.Errorf("a and k should not have been equal")
+		t.Errorf("a and k should have been equal")
 	}
 }
