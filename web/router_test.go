@@ -306,4 +306,21 @@ func TestValidMethods(t *testing.T) {
 				aMethods)
 		}
 	}
+
+	// This should also work when c.Env has already been initalized
+	m.Use(func(c *C, h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.Env = make(map[string]interface{})
+			h.ServeHTTP(w, r)
+		})
+	})
+	for path, eMethods := range validMethodsTable {
+		r, _ := http.NewRequest("BOGUS", path, nil)
+		m.ServeHTTP(httptest.NewRecorder(), r)
+		aMethods := <-ch
+		if !reflect.DeepEqual(eMethods, aMethods) {
+			t.Errorf("For %q, expected %v, got %v", path, eMethods,
+				aMethods)
+		}
+	}
 }
