@@ -1,7 +1,6 @@
 package graceful
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -90,8 +89,7 @@ func PostHook(f func()) {
 }
 
 func waitForSignal() {
-	sig := <-sigchan
-	log.Printf("Received %v, gracefully shutting down!", sig)
+	<-sigchan
 
 	hookLock.Lock()
 	defer hookLock.Unlock()
