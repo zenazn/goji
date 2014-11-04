@@ -34,6 +34,8 @@ func Serve() {
 
 	graceful.HandleSignals()
 	bind.Ready()
+	graceful.PreHook(func() { log.Printf("Goji received signal, gracefully stopping") })
+	graceful.PostHook(func() { log.Printf("Goji stopped") })
 
 	err := graceful.Serve(listener, http.DefaultServeMux)
 
