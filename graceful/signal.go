@@ -17,6 +17,7 @@ var wait = make(chan struct{})
 // This is the WaitGroup that indicates when all the connections have gracefully
 // shut down.
 var wg sync.WaitGroup
+var wgLock sync.Mutex
 
 // This lock protects the list of pre- and post- hooks below.
 var hookLock sync.Mutex
@@ -99,6 +100,8 @@ func waitForSignal() {
 	}
 
 	close(kill)
+	wgLock.Lock()
+	defer wgLock.Unlock()
 	wg.Wait()
 
 	for _, f := range posthooks {

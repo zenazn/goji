@@ -58,7 +58,10 @@ func WrapConn(c net.Conn) net.Conn {
 		return nil
 	}
 
+	wgLock.Lock()
+	defer wgLock.Unlock()
 	wg.Add(1)
+
 	return &conn{
 		Conn: c,
 		id:   atomic.AddUint64(&idleSet.id, 1),
