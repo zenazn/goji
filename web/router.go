@@ -69,16 +69,14 @@ func (h netHTTPWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 }
 
 func parseHandler(h interface{}) Handler {
-	switch h.(type) {
+	switch f := h.(type) {
 	case Handler:
-		return h.(Handler)
+		return f
 	case http.Handler:
-		return netHTTPWrap{h.(http.Handler)}
+		return netHTTPWrap{f}
 	case func(c C, w http.ResponseWriter, r *http.Request):
-		f := h.(func(c C, w http.ResponseWriter, r *http.Request))
 		return HandlerFunc(f)
 	case func(w http.ResponseWriter, r *http.Request):
-		f := h.(func(w http.ResponseWriter, r *http.Request))
 		return netHTTPWrap{http.HandlerFunc(f)}
 	default:
 		log.Fatalf("Unknown handler type %v. Expected a web.Handler, "+

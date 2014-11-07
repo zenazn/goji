@@ -32,13 +32,13 @@ type Pattern interface {
 }
 
 func parsePattern(p interface{}) Pattern {
-	switch p.(type) {
+	switch v := p.(type) {
 	case Pattern:
-		return p.(Pattern)
+		return v
 	case *regexp.Regexp:
-		return parseRegexpPattern(p.(*regexp.Regexp))
+		return parseRegexpPattern(v)
 	case string:
-		return parseStringPattern(p.(string))
+		return parseStringPattern(v)
 	default:
 		log.Fatalf("Unknown pattern type %v. Expected a web.Pattern, "+
 			"regexp.Regexp, or a string.", p)
