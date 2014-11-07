@@ -52,14 +52,13 @@ func (s *cStack) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 
 func (m *mStack) appendLayer(fn interface{}) {
 	ml := mLayer{orig: fn}
-	switch fn.(type) {
+	switch f := fn.(type) {
 	case func(http.Handler) http.Handler:
-		unwrapped := fn.(func(http.Handler) http.Handler)
 		ml.fn = func(c *C, h http.Handler) http.Handler {
-			return unwrapped(h)
+			return f(h)
 		}
 	case func(*C, http.Handler) http.Handler:
-		ml.fn = fn.(func(*C, http.Handler) http.Handler)
+		ml.fn = f
 	default:
 		log.Fatalf(`Unknown middleware type %v. Expected a function `+
 			`with signature "func(http.Handler) http.Handler" or `+
