@@ -32,8 +32,8 @@ func main() {
 	goji.Post("/greets", NewGreet)
 	// Use Sinatra-style patterns in your URLs
 	goji.Get("/users/:name", GetUser)
-	//Use  inline authentication(middleware)
-	goji.Get("/api/users/:name", InlineAuthentication(GetUser))
+	//Use inline middleware
+	goji.Get("/api/users/:name", InlineMiddleWare(GetUser))
 	// Goji also supports regular expressions with named capture groups.
 	goji.Get(regexp.MustCompile(`^/greets/(?P<id>\d+)$`), GetGreet)
 
