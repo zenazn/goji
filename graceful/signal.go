@@ -14,9 +14,14 @@ var kill = make(chan struct{})
 // closed once all the posthooks have been called.
 var wait = make(chan struct{})
 
+// This is the channel that request processing checks before proceeding. It
+// should be closed during app termination to prevent servicing new requests.
+var up = make(chan struct{}, 1)
+
 // This is the WaitGroup that indicates when all the connections have gracefully
 // shut down.
 var wg sync.WaitGroup
+var wgLock sync.Mutex
 
 // This lock protects the list of pre- and post- hooks below.
 var hookLock sync.Mutex
@@ -90,6 +95,11 @@ func PostHook(f func()) {
 
 func waitForSignal() {
 	<-sigchan
+
+	// Prevent servicing of any new requests.
+	wgLock.Lock()
+	defer wgLock.Unlock()
+	close(up)
 
 	hookLock.Lock()
 	defer hookLock.Unlock()
