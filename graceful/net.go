@@ -58,10 +58,28 @@ func WrapConn(c net.Conn) net.Conn {
 		return nil
 	}
 
-	wg.Add(1)
-	return &conn{
-		Conn: c,
-		id:   atomic.AddUint64(&idleSet.id, 1),
+	// Avoid race with termination code.
+	wgLock.Lock()
+	defer wgLock.Unlock()
+
+	// Determine whether the app is shutting down.
+	ok := true
+	select {
+	case _, ok = <-up:
+		// If the channel is closed, ok will be false, indicating termination
+		// is in progress.
+		// This case will only be selected once the channel is closed.
+	default:
+		// Make select non-blocking. Use default value of true.
+	}
+	if ok {
+		wg.Add(1)
+		return &conn{
+			Conn: c,
+			id:   atomic.AddUint64(&idleSet.id, 1),
+		}
+	} else {
+		return nil
 	}
 }
 
