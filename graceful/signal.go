@@ -14,9 +14,13 @@ var kill = make(chan struct{})
 // closed once all the posthooks have been called.
 var wait = make(chan struct{})
 
+// Whether new requests should be accepted. When false, new requests are refused.
+var acceptingRequests bool = true
+
 // This is the WaitGroup that indicates when all the connections have gracefully
 // shut down.
 var wg sync.WaitGroup
+var wgLock sync.Mutex
 
 // This lock protects the list of pre- and post- hooks below.
 var hookLock sync.Mutex
@@ -90,6 +94,11 @@ func PostHook(f func()) {
 
 func waitForSignal() {
 	<-sigchan
+
+	// Prevent servicing of any new requests.
+	wgLock.Lock()
+	acceptingRequests = false
+	wgLock.Unlock()
 
 	hookLock.Lock()
 	defer hookLock.Unlock()
