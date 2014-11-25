@@ -58,10 +58,19 @@ func WrapConn(c net.Conn) net.Conn {
 		return nil
 	}
 
-	wg.Add(1)
-	return &conn{
-		Conn: c,
-		id:   atomic.AddUint64(&idleSet.id, 1),
+	// Avoid race with termination code.
+	wgLock.Lock()
+	defer wgLock.Unlock()
+
+	// Determine whether the app is shutting down.
+	if acceptingRequests {
+		wg.Add(1)
+		return &conn{
+			Conn: c,
+			id:   atomic.AddUint64(&idleSet.id, 1),
+		}
+	} else {
+		return nil
 	}
 }
 
