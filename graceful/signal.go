@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 )
 
 // This is the channel that the connections select on. When it is closed, the
@@ -107,14 +108,27 @@ func waitForSignal() {
 		f()
 	}
 
+	var finished chan struct{} = make(chan struct{}, 1)
+	go shutdownWatcher(finished)
+
 	close(kill)
 	wg.Wait()
+	close(finished)
 
 	for _, f := range posthooks {
 		f()
 	}
 
 	close(wait)
+}
+
+func shutdownWatcher(finished chan struct{}) {
+	select {
+	case <-finished:
+		return
+	case <-time.After(7 * time.Second):
+		os.Exit(-1)
+	}
 }
 
 // Wait for all connections to gracefully shut down. This is commonly called at
