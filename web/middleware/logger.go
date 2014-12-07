@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/zenazn/goji/web"
-	"github.com/zenazn/goji/web/util"
+	"github.com/zenazn/goji/web/mutil"
 )
 
 // Logger is a middleware that logs the start and end of each request, along
@@ -29,7 +29,7 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 
 		printStart(reqID, r)
 
-		lw := util.WrapWriter(w)
+		lw := mutil.WrapWriter(w)
 
 		t1 := time.Now()
 		h.ServeHTTP(lw, r)
@@ -60,7 +60,7 @@ func printStart(reqID string, r *http.Request) {
 	log.Print(buf.String())
 }
 
-func printEnd(reqID string, w util.WriterProxy, dt time.Duration) {
+func printEnd(reqID string, w mutil.WriterProxy, dt time.Duration) {
 	var buf bytes.Buffer
 
 	if reqID != "" {

@@ -1,4 +1,4 @@
-package util
+package mutil
 
 import (
 	"bufio"
@@ -27,8 +27,8 @@ type WriterProxy interface {
 	Unwrap() http.ResponseWriter
 }
 
-// WrapWriter wraps an http.ResponseWriter into a proxy that allows you to hook
-// into various parts of the response process.
+// WrapWriter wraps an http.ResponseWriter, returning a proxy that allows you to
+// hook into various parts of the response process.
 func WrapWriter(w http.ResponseWriter) WriterProxy {
 	_, cn := w.(http.CloseNotifier)
 	_, fl := w.(http.Flusher)
