@@ -28,27 +28,11 @@ A middleware (the untyped parameter in Use() and Insert()) must be one of the
 following types:
 	- func(http.Handler) http.Handler
 	- func(c *web.C, http.Handler) http.Handler
+
 All of the route-adding functions on Mux take two untyped parameters: pattern
-and handler. Pattern must be one of the following types:
-	- string. It will be interpreted as a Sinatra-like pattern. In
-	  particular, the following syntax is recognized:
-		- a path segment starting with with a colon will match any
-		  string placed at that position. e.g., "/:name" will match
-		  "/carl", binding "name" to "carl".
-		- a pattern ending with "/*" will match any route with that
-		  prefix. For instance, the pattern "/u/:name/*" will match
-		  "/u/carl/" and "/u/carl/projects/123", but not "/u/carl"
-		  (because there is no trailing slash). In addition to any names
-		  bound in the pattern, the special name "*" is bound to the
-		  unmatched tail of the match, but including the leading "/". So
-		  for the two matching examples above, "*" would be bound to "/"
-		  and "/projects/123" respectively.
-	- regexp.Regexp. The library assumes that it is a Perl-style regexp that
-	  is anchored on the left (i.e., the beginning of the string). If your
-	  regexp is not anchored on the left, a hopefully-identical
-	  left-anchored regexp will be created and used instead.
-	- web.Pattern
-Handler must be one of the following types:
+and handler. Pattern will be passed to ParsePattern, which takes a web.Pattern,
+a string, or a regular expression (more information can be found in the
+ParsePattern documentation). Handler must be one of the following types:
 	- http.Handler
 	- web.Handler
 	- func(w http.ResponseWriter, r *http.Request)

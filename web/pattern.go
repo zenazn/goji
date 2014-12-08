@@ -31,8 +31,39 @@ type Pattern interface {
 	Run(r *http.Request, c *C)
 }
 
-func parsePattern(p interface{}) Pattern {
-	switch v := p.(type) {
+/*
+ParsePattern is used internally by Goji to parse route patterns. It is exposed
+publicly to make it easier to write thin wrappers around the built-in Pattern
+implementations.
+
+Although its parameter has type interface{}, ParsePattern only accepts arguments
+of three types:
+	- web.Pattern, which is passed through
+	- string, which is interpreted as a Sinatra-like URL pattern. In
+	  particular, the following syntax is recognized:
+		- a path segment starting with with a colon will match any
+		  string placed at that position. e.g., "/:name" will match
+		  "/carl", binding "name" to "carl".
+		- a pattern ending with "/*" will match any route with that
+		  prefix. For instance, the pattern "/u/:name/*" will match
+		  "/u/carl/" and "/u/carl/projects/123", but not "/u/carl"
+		  (because there is no trailing slash). In addition to any names
+		  bound in the pattern, the special key "*" is bound to the
+		  unmatched tail of the match, but including the leading "/". So
+		  for the two matching examples above, "*" would be bound to "/"
+		  and "/projects/123" respectively.
+	- regexp.Regexp, which is assumed to be a Perl-style regular expression
+	  that is anchored on the left (i.e., the beginning of the string). If
+	  your regular expression is not anchored on the left, a
+	  hopefully-identical left-anchored regular expression will be created
+	  and used instead.
+
+ParsePattern fatally exits (using log.Fatalf) if it is passed a value of an
+unexpected type. It is the caller's responsibility to ensure that ParsePattern
+is called in a type-safe manner.
+*/
+func ParsePattern(raw interface{}) Pattern {
+	switch v := raw.(type) {
 	case Pattern:
 		return v
 	case *regexp.Regexp:
@@ -40,8 +71,8 @@ func parsePattern(p interface{}) Pattern {
 	case string:
 		return parseStringPattern(v)
 	default:
-		log.Fatalf("Unknown pattern type %v. Expected a web.Pattern, "+
-			"regexp.Regexp, or a string.", p)
+		log.Fatalf("Unknown pattern type %T. Expected a web.Pattern, "+
+			"regexp.Regexp, or a string.", v)
 	}
 	panic("log.Fatalf does not return")
 }
