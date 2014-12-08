@@ -57,13 +57,11 @@ type router struct {
 	notFound Handler
 	machine  *routeMachine
 }
+
 type netHTTPWrap struct {
 	http.Handler
 }
 
-func (h netHTTPWrap) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.Handler.ServeHTTP(w, r)
-}
 func (h netHTTPWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
