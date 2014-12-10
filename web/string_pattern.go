@@ -66,7 +66,15 @@ func (s stringPattern) match(r *http.Request, c *C, dryrun bool) bool {
 			return false
 		}
 		if !dryrun {
-			matches["*"] = path[len(tail)-1:]
+			if strings.HasSuffix(tail, "/") {
+				matches["*"] = path[len(tail)-1:]
+			} else {
+				subpath := path[len(tail):]
+				if len(subpath) <= 1 {
+					subpath = "/"
+				}
+				matches["*"] = subpath
+			}
 		}
 	} else if path != tail {
 		return false
@@ -101,7 +109,7 @@ var patternRe = regexp.MustCompile(`[` + bc + `]:([^` + bc + `]+)`)
 func parseStringPattern(s string) stringPattern {
 	raw := s
 	var wildcard bool
-	if strings.HasSuffix(s, "/*") {
+	if strings.HasSuffix(s, "/*") || strings.HasSuffix(s, "*") {
 		s = s[:len(s)-1]
 		wildcard = true
 	}
