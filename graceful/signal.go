@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 )
 
 // This is the channel that the connections select on. When it is closed, the
@@ -27,7 +28,7 @@ var hookLock sync.Mutex
 var prehooks = make([]func(), 0)
 var posthooks = make([]func(), 0)
 
-var stdSignals = []os.Signal{os.Interrupt}
+var stdSignals = []os.Signal{syscall.SIGINT, syscall.SIGTERM}
 var sigchan = make(chan os.Signal, 1)
 
 func init() {
