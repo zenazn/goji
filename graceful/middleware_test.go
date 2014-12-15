@@ -4,6 +4,7 @@ package graceful
 
 import (
 	"net/http"
+	"sync/atomic"
 	"testing"
 )
 
@@ -36,7 +37,7 @@ func testClose(t *testing.T, h http.Handler, expectClose bool) {
 }
 
 func TestNormal(t *testing.T) {
-	kill = make(chan struct{})
+	atomic.StoreInt32(&closing, 0)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte{})
 	})
@@ -44,26 +45,26 @@ func TestNormal(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	kill = make(chan struct{})
+	atomic.StoreInt32(&closing, 0)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		close(kill)
+		atomic.StoreInt32(&closing, 1)
 	})
 	testClose(t, h, true)
 }
 
 func TestCloseWriteHeader(t *testing.T) {
-	kill = make(chan struct{})
+	atomic.StoreInt32(&closing, 0)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		close(kill)
+		atomic.StoreInt32(&closing, 1)
 		w.WriteHeader(200)
 	})
 	testClose(t, h, true)
 }
 
 func TestCloseWrite(t *testing.T) {
-	kill = make(chan struct{})
+	atomic.StoreInt32(&closing, 0)
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		close(kill)
+		atomic.StoreInt32(&closing, 1)
 		w.Write([]byte{})
 	})
 	testClose(t, h, true)

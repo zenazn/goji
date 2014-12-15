@@ -1,32 +1,22 @@
 package graceful
 
 import (
+	"net"
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
+
+	"github.com/zenazn/goji/graceful/listener"
 )
 
-// This is the channel that the connections select on. When it is closed, the
-// connections should gracefully exit.
-var kill = make(chan struct{})
-
-// This is the channel that the Wait() function selects on. It should only be
-// closed once all the posthooks have been called.
-var wait = make(chan struct{})
-
-// Whether new requests should be accepted. When false, new requests are refused.
-var acceptingRequests bool = true
-
-// This is the WaitGroup that indicates when all the connections have gracefully
-// shut down.
-var wg sync.WaitGroup
-var wgLock sync.Mutex
-
-// This lock protects the list of pre- and post- hooks below.
-var hookLock sync.Mutex
+var mu sync.Mutex // protects everything that follows
+var listeners = make([]*listener.T, 0)
 var prehooks = make([]func(), 0)
 var posthooks = make([]func(), 0)
+var closing int32
 
+var wait = make(chan struct{})
 var stdSignals = []os.Signal{os.Interrupt}
 var sigchan = make(chan os.Signal, 1)
 
@@ -71,8 +61,8 @@ func Shutdown() {
 // shutdown actions. All listeners will be called in the order they were added,
 // from a single goroutine.
 func PreHook(f func()) {
-	hookLock.Lock()
-	defer hookLock.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	prehooks = append(prehooks, f)
 }
@@ -82,12 +72,12 @@ func PreHook(f func()) {
 // from a single goroutine, and are guaranteed to be called after all listening
 // connections have been closed, but before Wait() returns.
 //
-// If you've Hijack()ed any connections that must be gracefully shut down in
-// some other way (since this library disowns all hijacked connections), it's
-// reasonable to use a PostHook() to signal and wait for them.
+// If you've Hijacked any connections that must be gracefully shut down in some
+// other way (since this library disowns all hijacked connections), it's
+// reasonable to use a PostHook to signal and wait for them.
 func PostHook(f func()) {
-	hookLock.Lock()
-	defer hookLock.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	posthooks = append(posthooks, f)
 }
@@ -95,19 +85,23 @@ func PostHook(f func()) {
 func waitForSignal() {
 	<-sigchan
 
-	// Prevent servicing of any new requests.
-	wgLock.Lock()
-	acceptingRequests = false
-	wgLock.Unlock()
-
-	hookLock.Lock()
-	defer hookLock.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	for _, f := range prehooks {
 		f()
 	}
 
-	close(kill)
+	atomic.StoreInt32(&closing, 1)
+	var wg sync.WaitGroup
+	wg.Add(len(listeners))
+	for _, l := range listeners {
+		go func(l *listener.T) {
+			defer wg.Done()
+			l.Close()
+			l.Drain()
+		}(l)
+	}
 	wg.Wait()
 
 	for _, f := range posthooks {
@@ -122,4 +116,30 @@ func waitForSignal() {
 // prematurely.
 func Wait() {
 	<-wait
+}
+
+func appendListener(l *listener.T) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	listeners = append(listeners, l)
+}
+
+const errClosing = "use of closed network connection"
+
+// During graceful shutdown, calls to Accept will start returning errors. This
+// is inconvenient, since we know these sorts of errors are peaceful, so we
+// silently swallow them.
+func peacefulError(err error) error {
+	if atomic.LoadInt32(&closing) == 0 {
+		return err
+	}
+	// Unfortunately Go doesn't really give us a better way to select errors
+	// than this, so *shrug*.
+	if oe, ok := err.(*net.OpError); ok {
+		if oe.Op == "accept" && oe.Err.Error() == errClosing {
+			return nil
+		}
+	}
+	return err
 }

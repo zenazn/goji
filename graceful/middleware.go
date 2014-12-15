@@ -7,6 +7,9 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sync/atomic"
+
+	"github.com/zenazn/goji/graceful/listener"
 )
 
 /*
@@ -62,10 +65,8 @@ type basicWriter struct {
 
 func (b *basicWriter) maybeClose() {
 	b.headerWritten = true
-	select {
-	case <-kill:
+	if atomic.LoadInt32(&closing) != 0 {
 		b.ResponseWriter.Header().Set("Connection", "close")
-	default:
 	}
 }
 
@@ -103,8 +104,8 @@ func (f *fancyWriter) Hijack() (c net.Conn, b *bufio.ReadWriter, e error) {
 	hj := f.basicWriter.ResponseWriter.(http.Hijacker)
 	c, b, e = hj.Hijack()
 
-	if conn, ok := c.(*conn); ok {
-		c = conn.hijack()
+	if e == nil {
+		e = listener.Disown(c)
 	}
 
 	return

@@ -3,18 +3,7 @@ Package graceful implements graceful shutdown for HTTP servers by closing idle
 connections after receiving a signal. By default, this package listens for
 interrupts (i.e., SIGINT), but when it detects that it is running under Einhorn
 it will additionally listen for SIGUSR2 as well, giving your application
-automatic support for graceful upgrades.
-
-It's worth mentioning explicitly that this package is a hack to shim graceful
-shutdown behavior into the net/http package provided in Go 1.2. It was written
-by carefully reading the sequence of function calls net/http happened to use as
-of this writing and finding enough surface area with which to add appropriate
-behavior. There's a very good chance that this package will cease to work in
-future versions of Go, but with any luck the standard library will add support
-of its own by then (https://code.google.com/p/go/issues/detail?id=4674).
-
-If you're interested in figuring out how this package works, we suggest you read
-the documentation for WrapConn() and net.go.
+automatic support for graceful restarts/code upgrades.
 */
 package graceful
 
@@ -22,19 +11,11 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+
+	"github.com/zenazn/goji/graceful/listener"
 )
 
-/*
-You might notice that these methods look awfully similar to the methods of the
-same name from the go standard library--that's because they were stolen from
-there! If go were more like, say, Ruby, it'd actually be possible to shim just
-the Serve() method, since we can do everything we want from there. However, it's
-not possible to get the other methods which call Serve() (ListenAndServe(), say)
-to call your shimmed copy--they always call the original.
-
-Since I couldn't come up with a better idea, I just copy-and-pasted both
-ListenAndServe and ListenAndServeTLS here more-or-less verbatim. "Oh well!"
-*/
+// Most of the code here is lifted straight from net/http
 
 // Type Server is exactly the same as an http.Server, but provides more graceful
 // implementations of its methods.
@@ -97,4 +78,20 @@ func ListenAndServeTLS(addr, certfile, keyfile string, handler http.Handler) err
 func Serve(l net.Listener, handler http.Handler) error {
 	server := &Server{Handler: handler}
 	return server.Serve(l)
+}
+
+// WrapListener wraps an arbitrary net.Listener for use with graceful shutdowns.
+// In the background, it uses the listener sub-package to Wrap the listener in
+// Deadline mode. If another mode of operation is desired, you should call
+// listener.Wrap yourself: this function is smart enough to not double-wrap
+// listeners.
+func WrapListener(l net.Listener) net.Listener {
+	if lt, ok := l.(*listener.T); ok {
+		appendListener(lt)
+		return lt
+	}
+
+	lt := listener.Wrap(l, listener.Deadline)
+	appendListener(lt)
+	return lt
 }
