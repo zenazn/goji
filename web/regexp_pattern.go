@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"regexp/syntax"
+	"strings"
 )
 
 type regexpPattern struct {
@@ -42,7 +43,9 @@ func (p regexpPattern) match(r *http.Request, c *C, dryrun bool) bool {
 		c.URLParams[p.names[i]] = matches[i]
 	}
 
-	c.URLParams["*"] = p.re.ReplaceAllString(r.URL.Path, "")
+	if !strings.HasSuffix(p.re.String(), "$") {
+		c.URLParams["*"] = p.re.ReplaceAllString(r.URL.Path, "")
+	}
 
 	return true
 }
