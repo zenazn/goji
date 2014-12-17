@@ -41,6 +41,9 @@ func (p regexpPattern) match(r *http.Request, c *C, dryrun bool) bool {
 	for i := 1; i < len(matches); i++ {
 		c.URLParams[p.names[i]] = matches[i]
 	}
+
+	c.URLParams["*"] = p.re.ReplaceAllString(r.URL.Path, "")
+
 	return true
 }
 
