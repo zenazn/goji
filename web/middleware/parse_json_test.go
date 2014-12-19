@@ -9,13 +9,13 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-func TestParseJsonInvalidInput(t *testing.T) {
+func TestParseJSONInvalidInput(t *testing.T) {
 	rr := httptest.NewRecorder()
 	s := web.New()
-	s.Use(ParseJson)
+	s.Use(ParseJSON)
 
-	invalid_json := strings.NewReader("{")
-	r, err := http.NewRequest("GET", "/", invalid_json)
+	invalidJSON := strings.NewReader("{")
+	r, err := http.NewRequest("GET", "/", invalidJSON)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,23 +24,23 @@ func TestParseJsonInvalidInput(t *testing.T) {
 	s.ServeHTTP(rr, r)
 
 	if rr.Code != http.StatusBadRequest {
-		t.Errorf("Reponse code is not '400 - Bad request' for invalid Json")
+		t.Errorf("Reponse code is not '400 - Bad request' for invalid JSON")
 	}
 }
 
-func TestParseJsonNoHeader(t *testing.T) {
+func TestParseJSONNoHeader(t *testing.T) {
 	rr := httptest.NewRecorder()
 	s := web.New()
-	s.Use(ParseJson)
+	s.Use(ParseJSON)
 	s.Get("/", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		_, ok := c.Env[ParsedJsonKey]
+		_, ok := c.Env[ParsedJSONKey]
 		if ok {
 			t.Errorf("Env is populated but the Content-Type header is not sent")
 		}
 	})
 
-	json := strings.NewReader(`{}`)
-	r, err := http.NewRequest("GET", "/", json)
+	validJSON := strings.NewReader(`{}`)
+	r, err := http.NewRequest("GET", "/", validJSON)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,19 +52,19 @@ func TestParseJsonNoHeader(t *testing.T) {
 	}
 }
 
-func TestParseJsonAlternativeContentType(t *testing.T) {
+func TestParseJSONBadContentType(t *testing.T) {
 	rr := httptest.NewRecorder()
 	s := web.New()
-	s.Use(ParseJson)
+	s.Use(ParseJSON)
 	s.Get("/", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		_, ok := c.Env[ParsedJsonKey]
+		_, ok := c.Env[ParsedJSONKey]
 		if ok {
 			t.Errorf("Env is populated but the Content-Type header is not set to application/json")
 		}
 	})
 
-	json := strings.NewReader(`{}`)
-	r, err := http.NewRequest("GET", "/", json)
+	validJSON := strings.NewReader(`[]`)
+	r, err := http.NewRequest("GET", "/", validJSON)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,12 +77,12 @@ func TestParseJsonAlternativeContentType(t *testing.T) {
 	}
 }
 
-func TestParseJsonPopulatedEnv(t *testing.T) {
+func TestParseJSONPopulatedEnv(t *testing.T) {
 	rr := httptest.NewRecorder()
 	s := web.New()
-	s.Use(ParseJson)
+	s.Use(ParseJSON)
 	s.Get("/", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		temp, ok := c.Env[ParsedJsonKey]
+		temp, ok := c.Env[ParsedJSONKey]
 		if !ok {
 			t.Errorf("Env is not populated")
 		}
@@ -106,8 +106,8 @@ func TestParseJsonPopulatedEnv(t *testing.T) {
 		}
 	})
 
-	json := strings.NewReader(`{"email":"xyz","password":"zyx"}`)
-	r, err := http.NewRequest("GET", "/", json)
+	validJSON := strings.NewReader(`{"email":"xyz","password":"zyx"}`)
+	r, err := http.NewRequest("GET", "/", validJSON)
 	if err != nil {
 		t.Fatal(err)
 	}
