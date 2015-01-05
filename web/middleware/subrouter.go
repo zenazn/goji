@@ -13,7 +13,11 @@ type subrouter struct {
 
 func (s subrouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.c.URLParams != nil {
-		if path, ok := s.c.URLParams["*"]; ok {
+		path, ok := s.c.URLParams["*"]
+		if !ok {
+			path, ok = s.c.URLParams["_"]
+		}
+		if ok {
 			oldpath := r.URL.Path
 			r.URL.Path = path
 			defer func() {
@@ -31,6 +35,11 @@ func (s subrouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // middleware will help you set the request URL's Path to this unmatched suffix,
 // allowing you to write sub-routers with no knowledge of what routes the parent
 // router matches.
+//
+// Since Go's regular expressions do not allow you to create a capturing group
+// named "*", SubRouter also accepts the string "_". For instance, to duplicate
+// the semantics of the string pattern "/foo/*", you might use the regular
+// expression "^/foo(?P<_>/.*)$".
 func SubRouter(c *web.C, h http.Handler) http.Handler {
 	return subrouter{c, h}
 }
