@@ -38,7 +38,9 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	if addr == "" {
 		addr = ":https"
 	}
-	config := &tls.Config{}
+	config := &tls.Config{
+		MinVersion: tls.VersionTLS10
+	}
 	if srv.TLSConfig != nil {
 		*config = *srv.TLSConfig
 	}
