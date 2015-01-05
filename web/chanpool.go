@@ -1,4 +1,4 @@
-// +build !go1.3 appengine
+// +build !go1.3
 
 package web
 
