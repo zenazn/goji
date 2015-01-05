@@ -33,12 +33,18 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve(l)
 }
 
+// Unlike the method of the same name on http.Server, this function defaults to
+// enforcing TLS 1.0 or higher in order to address the POODLE vulnerability.
+// Users who wish to enable SSLv3 must do so by supplying a TLSConfig
+// explicitly.
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":https"
 	}
-	config := &tls.Config{}
+	config := &tls.Config{
+		MinVersion: tls.VersionTLS10,
+	}
 	if srv.TLSConfig != nil {
 		*config = *srv.TLSConfig
 	}
@@ -68,7 +74,11 @@ func ListenAndServe(addr string, handler http.Handler) error {
 	return server.ListenAndServe()
 }
 
-// ListenAndServeTLS behaves exactly like the net/http function of the same name.
+// ListenAndServeTLS behaves almost exactly like the net/http function of the
+// same name. Unlike net/http, however, this function defaults to enforcing TLS
+// 1.0 or higher in order to address the POODLE vulnerability. Users who wish to
+// enable SSLv3 must do so by explicitly instantiating a server with an
+// appropriately configured TLSConfig property.
 func ListenAndServeTLS(addr, certfile, keyfile string, handler http.Handler) error {
 	server := &Server{Addr: addr, Handler: handler}
 	return server.ListenAndServeTLS(certfile, keyfile)
