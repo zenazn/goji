@@ -19,7 +19,7 @@ func (f fakeWriter) Write(buf []byte) (int, error) {
 func (f fakeWriter) WriteHeader(status int) {}
 
 func testClose(t *testing.T, h http.Handler, expectClose bool) {
-	m := Middleware(h)
+	m := middleware(h)
 	r, _ := http.NewRequest("GET", "/", nil)
 	w := make(fakeWriter)
 	m.ServeHTTP(w, r)
