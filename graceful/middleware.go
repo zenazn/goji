@@ -12,30 +12,9 @@ import (
 	"github.com/zenazn/goji/graceful/listener"
 )
 
-/*
-Middleware adds graceful shutdown capabilities to the given handler. When a
-graceful shutdown is in progress, this middleware intercepts responses to add a
-"Connection: close" header to politely inform the client that we are about to go
-away.
-
-This package creates a shim http.ResponseWriter that it passes to subsequent
-handlers. Unfortunately, there's a great many optional interfaces that this
-http.ResponseWriter might implement (e.g., http.CloseNotifier, http.Flusher, and
-http.Hijacker), and in order to perfectly proxy all of these options we'd be
-left with some kind of awful powerset of ResponseWriters, and that's not even
-counting all the other custom interfaces you might be expecting. Instead of
-doing that, we have implemented two kinds of proxies: one that contains no
-additional methods (i.e., exactly corresponding to the http.ResponseWriter
-interface), and one that supports all three of http.CloseNotifier, http.Flusher,
-and http.Hijacker. If you find that this is not enough, the original
-http.ResponseWriter can be retrieved by calling Unwrap() on the proxy object.
-
-This middleware is automatically applied to every http.Handler passed to this
-package, and most users will not need to call this function directly. It is
-exported primarily for documentation purposes and in the off chance that someone
-really wants more control over their http.Server than we currently provide.
-*/
-func Middleware(h http.Handler) http.Handler {
+// Middleware provides functionality similar to net/http.Server's
+// SetKeepAlivesEnabled in Go 1.3, but in Go 1.2.
+func middleware(h http.Handler) http.Handler {
 	if h == nil {
 		return nil
 	}

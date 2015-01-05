@@ -22,7 +22,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	if shadow.ReadTimeout == 0 {
 		shadow.ReadTimeout = forever
 	}
-	shadow.Handler = Middleware(shadow.Handler)
+	shadow.Handler = middleware(shadow.Handler)
 
 	wrap := listener.Wrap(l, listener.Deadline)
 	appendListener(wrap)
