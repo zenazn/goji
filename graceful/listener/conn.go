@@ -25,7 +25,7 @@ var errClosing = errors.New("use of closed network connection")
 
 func (c *conn) init() error {
 	c.shard.wg.Add(1)
-	if shouldExit := c.shard.markIdle(c); shouldExit {
+	if shouldExit := c.shard.track(c); shouldExit {
 		c.Close()
 		return errClosing
 	}
@@ -65,11 +65,13 @@ func (c *conn) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if !c.closed && !c.disowned {
-		c.closed = true
-		c.shard.markInUse(c)
-		defer c.shard.wg.Done()
+	if c.closed || c.disowned {
+		return errClosing
 	}
+
+	c.closed = true
+	c.shard.disown(c)
+	defer c.shard.wg.Done()
 
 	return c.Conn.Close()
 }
@@ -98,7 +100,7 @@ func (c *conn) markIdle() {
 
 	if exit := c.shard.markIdle(c); exit && !c.closed && !c.disowned {
 		c.closed = true
-		c.shard.markInUse(c)
+		c.shard.disown(c)
 		defer c.shard.wg.Done()
 		c.Conn.Close()
 		return
@@ -121,7 +123,7 @@ func (c *conn) closeIfIdle() error {
 
 	if !c.busy && !c.closed && !c.disowned {
 		c.closed = true
-		c.shard.markInUse(c)
+		c.shard.disown(c)
 		defer c.shard.wg.Done()
 		return c.Conn.Close()
 	}
@@ -139,7 +141,7 @@ func (c *conn) disown() error {
 		return errAlreadyDisowned
 	}
 
-	c.shard.markInUse(c)
+	c.shard.disown(c)
 	c.disowned = true
 	c.shard.wg.Done()
 

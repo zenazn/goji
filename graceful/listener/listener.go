@@ -108,7 +108,7 @@ func (t *T) Close() error {
 // serving requests.
 func (t *T) CloseIdle() error {
 	for i := range t.shards {
-		t.shards[i].closeIdle(false)
+		t.shards[i].closeConns(false, false)
 	}
 	// Not sure if returning errors is actually useful here :/
 	return nil
@@ -122,7 +122,7 @@ func (t *T) CloseIdle() error {
 // connections will be accepted and immediately closed.
 func (t *T) Drain() error {
 	for i := range t.shards {
-		t.shards[i].closeIdle(true)
+		t.shards[i].closeConns(false, true)
 	}
 	for i := range t.shards {
 		t.shards[i].wait()
@@ -130,7 +130,20 @@ func (t *T) Drain() error {
 	return nil
 }
 
-var notManagedErr = errors.New("listener: passed net.Conn is not managed by us")
+// DrainAll closes all connections currently tracked by this listener (both idle
+// and in-use connections), and prevents new connections from being accepted.
+// Disowned connections are not closed.
+func (t *T) DrainAll() error {
+	for i := range t.shards {
+		t.shards[i].closeConns(true, true)
+	}
+	for i := range t.shards {
+		t.shards[i].wait()
+	}
+	return nil
+}
+
+var notManagedErr = errors.New("listener: passed net.Conn is not managed by this package")
 
 // Disown causes a connection to no longer be tracked by the listener. The
 // passed connection must have been returned by a call to Accept from this

@@ -110,6 +110,19 @@ func TestDrain(t *testing.T) {
 	}
 }
 
+func TestDrainAll(t *testing.T) {
+	t.Parallel()
+	l, c, wc := singleConn(t, Manual)
+
+	MarkInUse(wc)
+	if err := l.DrainAll(); err != nil {
+		t.Fatalf("error draining listener: %v", err)
+	}
+	if !c.Closed() {
+		t.Error("expected in-use connection to be closed")
+	}
+}
+
 func TestErrors(t *testing.T) {
 	t.Parallel()
 	_, c, wc := singleConn(t, Manual)
