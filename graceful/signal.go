@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/zenazn/goji/graceful/listener"
 )
@@ -14,6 +15,7 @@ var listeners = make([]*listener.T, 0)
 var prehooks = make([]func(), 0)
 var posthooks = make([]func(), 0)
 var closing int32
+var doubleKick, timeout time.Duration
 
 var wait = make(chan struct{})
 var stdSignals = []os.Signal{os.Interrupt}
@@ -76,6 +78,20 @@ func ShutdownNow() {
 	shutdown(true)
 }
 
+// DoubleKickWindow sets the length of the window during which two back-to-back
+// signals are treated as an especially urgent or forceful request to exit
+// (i.e., ShutdownNow instead of Shutdown). Signals delivered more than this
+// duration apart are treated as separate requests to exit gracefully as usual.
+func DoubleKickWindow(d time.Duration) {
+	if d < 0 {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+
+	doubleKick = d
+}
+
 // Wait for all connections to gracefully shut down. This is commonly called at
 // the bottom of the main() function to prevent the program from exiting
 // prematurely.
@@ -87,9 +103,15 @@ func init() {
 	go sigLoop()
 }
 func sigLoop() {
+	var last time.Time
 	for {
 		<-sigchan
-		go shutdown(false)
+		now := time.Now()
+		mu.Lock()
+		force := doubleKick != 0 && now.Sub(last) < doubleKick
+		mu.Unlock()
+		go shutdown(force)
+		last = now
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/zenazn/goji/bind"
 	"github.com/zenazn/goji/graceful"
@@ -16,6 +17,7 @@ func init() {
 	if fl := log.Flags(); fl&log.Ltime != 0 {
 		log.SetFlags(fl | log.Lmicroseconds)
 	}
+	graceful.DoubleKickWindow(2 * time.Second)
 }
 
 // Serve starts Goji using reasonable defaults.
