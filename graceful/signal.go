@@ -1,7 +1,6 @@
 package graceful
 
 import (
-	"net"
 	"os"
 	"os/signal"
 	"sync"
@@ -116,30 +115,4 @@ func waitForSignal() {
 // prematurely.
 func Wait() {
 	<-wait
-}
-
-func appendListener(l *listener.T) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	listeners = append(listeners, l)
-}
-
-const errClosing = "use of closed network connection"
-
-// During graceful shutdown, calls to Accept will start returning errors. This
-// is inconvenient, since we know these sorts of errors are peaceful, so we
-// silently swallow them.
-func peacefulError(err error) error {
-	if atomic.LoadInt32(&closing) == 0 {
-		return err
-	}
-	// Unfortunately Go doesn't really give us a better way to select errors
-	// than this, so *shrug*.
-	if oe, ok := err.(*net.OpError); ok {
-		if oe.Op == "accept" && oe.Err.Error() == errClosing {
-			return nil
-		}
-	}
-	return err
 }
