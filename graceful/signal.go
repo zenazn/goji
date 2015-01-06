@@ -82,6 +82,8 @@ func ShutdownNow() {
 // signals are treated as an especially urgent or forceful request to exit
 // (i.e., ShutdownNow instead of Shutdown). Signals delivered more than this
 // duration apart are treated as separate requests to exit gracefully as usual.
+//
+// Setting DoubleKickWindow to 0 disables the feature.
 func DoubleKickWindow(d time.Duration) {
 	if d < 0 {
 		return
@@ -90,6 +92,22 @@ func DoubleKickWindow(d time.Duration) {
 	defer mu.Unlock()
 
 	doubleKick = d
+}
+
+// Timeout sets the maximum amount of time package graceful will wait for
+// connections to gracefully shut down after receiving a signal. After this
+// timeout, connections will be forcefully shut down (similar to calling
+// ShutdownNow).
+//
+// Setting Timeout to 0 disables the feature.
+func Timeout(d time.Duration) {
+	if d < 0 {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+
+	timeout = d
 }
 
 // Wait for all connections to gracefully shut down. This is commonly called at
@@ -109,6 +127,12 @@ func sigLoop() {
 		now := time.Now()
 		mu.Lock()
 		force := doubleKick != 0 && now.Sub(last) < doubleKick
+		if t := timeout; t != 0 && !force {
+			go func() {
+				time.Sleep(t)
+				shutdown(true)
+			}()
+		}
 		mu.Unlock()
 		go shutdown(force)
 		last = now
