@@ -41,9 +41,9 @@ func (c connState) Wrap(nc net.Conn, s http.ConnState) {
 	// there.
 	//
 	// I started a golang-nuts thread about this here:
-	// https://groups.google.com/forum/#!topic/golang-nuts/Xi8yjBGWfCQ I'd
-	// be very eager to find a better way to do this, so reach out to me if
-	// you have any ideas.
+	// https://groups.google.com/forum/#!topic/golang-nuts/Xi8yjBGWfCQ
+	// I'd be very eager to find a better way to do this, so reach out to me
+	// if you have any ideas.
 	switch s {
 	case http.StateIdle:
 		if err := listener.MarkIdle(nc); err != nil {
