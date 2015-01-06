@@ -19,10 +19,6 @@ var wait = make(chan struct{})
 var stdSignals = []os.Signal{os.Interrupt}
 var sigchan = make(chan os.Signal, 1)
 
-func init() {
-	go waitForSignal()
-}
-
 // HandleSignals installs signal handlers for a set of standard signals. By
 // default, this set only includes keyboard interrupts, however when the package
 // detects that it is running under Einhorn, a SIGUSR2 handler is installed as
@@ -40,20 +36,6 @@ func AddSignal(sig ...os.Signal) {
 // ResetSignals resets the list of signals that trigger a graceful shutdown.
 func ResetSignals() {
 	signal.Stop(sigchan)
-}
-
-type userShutdown struct{}
-
-func (u userShutdown) String() string {
-	return "application initiated shutdown"
-}
-func (u userShutdown) Signal() {}
-
-// Shutdown manually triggers a shutdown from your application. Like Wait(),
-// blocks until all connections have gracefully shut down.
-func Shutdown() {
-	sigchan <- userShutdown{}
-	<-wait
 }
 
 // PreHook registers a function to be called before any of this package's normal
@@ -81,33 +63,17 @@ func PostHook(f func()) {
 	posthooks = append(posthooks, f)
 }
 
-func waitForSignal() {
-	<-sigchan
+// Shutdown manually triggers a shutdown from your application. Like Wait,
+// blocks until all connections have gracefully shut down.
+func Shutdown() {
+	shutdown(false)
+}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	for _, f := range prehooks {
-		f()
-	}
-
-	atomic.StoreInt32(&closing, 1)
-	var wg sync.WaitGroup
-	wg.Add(len(listeners))
-	for _, l := range listeners {
-		go func(l *listener.T) {
-			defer wg.Done()
-			l.Close()
-			l.Drain()
-		}(l)
-	}
-	wg.Wait()
-
-	for _, f := range posthooks {
-		f()
-	}
-
-	close(wait)
+// ShutdownNow triggers an immediate shutdown from your application. All
+// connections (not just those that are idle) are immediately closed, even if
+// they are in the middle of serving a request.
+func ShutdownNow() {
+	shutdown(true)
 }
 
 // Wait for all connections to gracefully shut down. This is commonly called at
@@ -115,4 +81,71 @@ func waitForSignal() {
 // prematurely.
 func Wait() {
 	<-wait
+}
+
+func init() {
+	go sigLoop()
+}
+func sigLoop() {
+	for {
+		<-sigchan
+		go shutdown(false)
+	}
+}
+
+var preOnce, closeOnce, forceOnce, postOnce, notifyOnce sync.Once
+
+func shutdown(force bool) {
+	preOnce.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, f := range prehooks {
+			f()
+		}
+	})
+
+	if force {
+		forceOnce.Do(func() {
+			closeListeners(force)
+		})
+	} else {
+		closeOnce.Do(func() {
+			closeListeners(force)
+		})
+	}
+
+	postOnce.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, f := range posthooks {
+			f()
+		}
+	})
+
+	notifyOnce.Do(func() {
+		close(wait)
+	})
+}
+
+func closeListeners(force bool) {
+	atomic.StoreInt32(&closing, 1)
+
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	wg.Add(len(listeners))
+
+	for _, l := range listeners {
+		go func(l *listener.T) {
+			defer wg.Done()
+			l.Close()
+			if force {
+				l.DrainAll()
+			} else {
+				l.Drain()
+			}
+		}(l)
+	}
 }
