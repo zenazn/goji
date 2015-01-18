@@ -21,7 +21,7 @@ func testOptions(r *http.Request, f func(*web.C, http.ResponseWriter, *http.Requ
 	return w
 }
 
-var optionsTestEnv = map[string]interface{}{
+var optionsTestEnv = map[interface{}]interface{}{
 	web.ValidMethodsKey: []string{
 		"hello",
 		"world",

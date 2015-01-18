@@ -179,7 +179,7 @@ func TestContext(t *testing.T) {
 			if c.Env != nil || c.URLParams != nil {
 				t.Error("Expected a clean context")
 			}
-			c.Env = make(map[string]interface{})
+			c.Env = make(map[interface{}]interface{})
 			c.Env["reqID"] = 1
 
 			h.ServeHTTP(w, r)

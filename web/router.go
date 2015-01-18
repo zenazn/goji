@@ -129,7 +129,7 @@ func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
 	sort.Strings(methodsList)
 
 	if c.Env == nil {
-		c.Env = map[string]interface{}{
+		c.Env = map[interface{}]interface{}{
 			ValidMethodsKey: methodsList,
 		}
 	} else {

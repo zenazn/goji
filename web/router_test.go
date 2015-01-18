@@ -310,7 +310,7 @@ func TestValidMethods(t *testing.T) {
 	// This should also work when c.Env has already been initalized
 	m.Use(func(c *C, h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c.Env = make(map[string]interface{})
+			c.Env = make(map[interface{}]interface{})
 			h.ServeHTTP(w, r)
 		})
 	})

@@ -36,7 +36,7 @@ func TestIfItWorks(t *testing.T) {
 	}
 
 	r, _ = http.NewRequest("GET", "/hello/bob", nil)
-	env := map[string]interface{}{"greeting": "Yo "}
+	env := map[interface{}]interface{}{"greeting": "Yo "}
 	m.ServeHTTPC(C{Env: env}, httptest.NewRecorder(), r)
 	out = <-ch
 	if out != "Yo bob" {

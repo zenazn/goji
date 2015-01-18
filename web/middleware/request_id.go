@@ -60,7 +60,7 @@ func init() {
 func RequestID(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if c.Env == nil {
-			c.Env = make(map[string]interface{})
+			c.Env = make(map[interface{}]interface{})
 		}
 		myid := atomic.AddUint64(&reqid, 1)
 		c.Env[RequestIDKey] = fmt.Sprintf("%s-%06d", prefix, myid)

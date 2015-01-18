@@ -56,7 +56,9 @@ of three types:
 	  that is anchored on the left (i.e., the beginning of the string). If
 	  your regular expression is not anchored on the left, a
 	  hopefully-identical left-anchored regular expression will be created
-	  and used instead.
+	  and used instead. Named capturing groups will bind URLParams of the
+	  same name; unnamed capturing groups will be bound to the variables
+	  "$1", "$2", etc.
 
 ParsePattern fatally exits (using log.Fatalf) if it is passed a value of an
 unexpected type. It is the caller's responsibility to ensure that ParsePattern
