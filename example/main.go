@@ -131,7 +131,7 @@ func GetUser(c web.C, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetGreet finds a particular greet by ID (GET "/greet/\d+"). Does no bounds
+// GetGreet finds a particular greet by ID (GET "/greets/\d+"). Does no bounds
 // checking, so will probably panic.
 func GetGreet(c web.C, w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(c.URLParams["id"])
