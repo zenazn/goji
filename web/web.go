@@ -14,8 +14,8 @@ A usage example:
 
 Use your favorite HTTP verbs and the interfaces you know and love from net/http:
 
-	var legacyFooHttpHandler http.Handler // From elsewhere
-	m.Get("/foo", legacyFooHttpHandler)
+	var existingHTTPHandler http.Handler // From elsewhere
+	m.Get("/foo", existingHTTPHandler)
 	m.Post("/bar", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello world!"))
 	})
