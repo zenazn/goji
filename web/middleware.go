@@ -50,6 +50,8 @@ func (s *cStack) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	s.m.ServeHTTP(w, r)
 }
 
+const unknownMiddleware = `Unknown middleware type %T. See http://godoc.org/github.com/zenazn/goji/web#MiddlewareType for a list of acceptable types.`
+
 func (m *mStack) appendLayer(fn interface{}) {
 	ml := mLayer{orig: fn}
 	switch f := fn.(type) {
@@ -60,9 +62,7 @@ func (m *mStack) appendLayer(fn interface{}) {
 	case func(*C, http.Handler) http.Handler:
 		ml.fn = f
 	default:
-		log.Fatalf(`Unknown middleware type %v. Expected a function `+
-			`with signature "func(http.Handler) http.Handler" or `+
-			`"func(*web.C, http.Handler) http.Handler".`, fn)
+		log.Fatalf(unknownMiddleware, fn)
 	}
 	m.stack = append(m.stack, ml)
 }

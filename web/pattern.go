@@ -31,6 +31,8 @@ type Pattern interface {
 	Run(r *http.Request, c *C)
 }
 
+const unknownPattern = `Unknown pattern type %T. See http://godoc.org/github.com/zenazn/goji/web#PatternType for a list of acceptable types.`
+
 /*
 ParsePattern is used internally by Goji to parse route patterns. It is exposed
 publicly to make it easier to write thin wrappers around the built-in Pattern
@@ -50,8 +52,7 @@ func ParsePattern(raw PatternType) Pattern {
 	case string:
 		return parseStringPattern(v)
 	default:
-		log.Fatalf("Unknown pattern type %T. Expected a web.Pattern, "+
-			"regexp.Regexp, or a string.", v)
+		log.Fatalf(unknownPattern, v)
+		panic("log.Fatalf does not return")
 	}
-	panic("log.Fatalf does not return")
 }
