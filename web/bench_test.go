@@ -93,13 +93,18 @@ func benchN(b *testing.B, n int) {
 	for _, prefix := range prefixes {
 		addRoutes(m, prefix)
 	}
+	m.Compile()
 	reqs := permuteRequests(genRequests(prefixes))
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, reqs[i%len(reqs)])
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			i++
+			m.ServeHTTP(w, reqs[i%len(reqs)])
+		}
+	})
 }
 
 func benchM(b *testing.B, n int) {
@@ -109,18 +114,22 @@ func benchM(b *testing.B, n int) {
 		m.Use(trivialMiddleware)
 	}
 	r, _ := http.NewRequest("GET", "/", nil)
+	m.Compile()
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, r)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m.ServeHTTP(w, r)
+		}
+	})
 }
 
 func BenchmarkStatic(b *testing.B) {
 	m := New()
 	m.Get("/", nilRouter{})
 	r, _ := http.NewRequest("GET", "/", nil)
+	m.Compile()
 
 	b.ResetTimer()
 	b.ReportAllocs()
