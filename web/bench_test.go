@@ -133,9 +133,11 @@ func BenchmarkStatic(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		m.ServeHTTP(w, r)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m.ServeHTTP(w, r)
+		}
+	})
 }
 
 func BenchmarkRoute5(b *testing.B) {
