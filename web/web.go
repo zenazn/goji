@@ -7,65 +7,6 @@ and regular expressions. Second, it allows you to write reconfigurable
 middleware stacks. And finally, it allows you to attach additional context to
 requests, in a manner that can be manipulated by both compliant middleware and
 handlers.
-
-A usage example:
-
-	m := web.New()
-
-Use your favorite HTTP verbs and the interfaces you know and love from net/http:
-
-	var existingHTTPHandler http.Handler // From elsewhere
-	m.Get("/foo", existingHTTPHandler)
-	m.Post("/bar", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world!"))
-	})
-
-Bind parameters using either named captures or regular expressions:
-
-	m.Get("/hello/:name", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %s!", c.URLParams["name"])
-	})
-	pattern := regexp.MustCompile(`^/ip/(?P<ip>(?:\d{1,3}\.){3}\d{1,3})$`)
-	m.Get(pattern, func(c web.C, w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Info for IP address %s:", c.URLParams["ip"])
-	})
-
-Middleware are functions that wrap http.Handlers, just like you'd use with raw
-net/http. Middleware functions can optionally take a context parameter, which
-will be threaded throughout the middleware stack and to the final handler, even
-if not all of the intervening middleware or handlers support contexts.
-Middleware are encouraged to use the Env parameter to pass request-scoped data
-to other middleware and to the final handler:
-
-	func LoggerMiddleware(h http.Handler) http.Handler {
-		handler := func(w http.ResponseWriter, r *http.Request) {
-			log.Println("Before request")
-			h.ServeHTTP(w, r)
-			log.Println("After request")
-		}
-		return http.HandlerFunc(handler)
-	}
-	func AuthMiddleware(c *web.C, h http.Handler) http.Handler {
-		handler := func(w http.ResponseWriter, r *http.Request) {
-			if cookie, err := r.Cookie("user"); err == nil {
-				c.Env["user"] = cookie.Value
-			}
-			h.ServeHTTP(w, r)
-		}
-		return http.HandlerFunc(handler)
-	}
-
-	// This makes the AuthMiddleware above a little cleaner
-	m.Use(middleware.EnvInit)
-	m.Use(AuthMiddleware)
-	m.Use(LoggerMiddleware)
-	m.Get("/baz", func(c web.C, w http.ResponseWriter, r *http.Request) {
-		if user, ok := c.Env["user"].(string); ok {
-			w.Write([]byte("Hello " + user))
-		} else {
-			w.Write([]byte("Hello Stranger!"))
-		}
-	})
 */
 package web
 
