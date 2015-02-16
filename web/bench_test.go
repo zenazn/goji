@@ -1,3 +1,5 @@
+// +build go1.3
+
 package web
 
 import (
