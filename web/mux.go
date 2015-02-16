@@ -5,38 +5,18 @@ import (
 )
 
 /*
-Mux is an HTTP multiplexer, much like net/http's ServeMux.
+Mux is an HTTP multiplexer, much like net/http's ServeMux. It functions as both
+a middleware stack and as an HTTP router.
 
-Routes may be added using any of the various HTTP-method-specific functions.
-When processing a request, when iterating in insertion order the first route
-that matches both the request's path and method is used.
+Middleware provide a great abstraction for actions that must be performed on
+every request, such as request logging and authentication. To append, insert,
+and remove middleware, you can call the Use, Insert, and Abandon functions
+respectively.
 
-There are two other differences worth mentioning between web.Mux and
-http.ServeMux. First, string patterns (i.e., Sinatra-like patterns) must match
-exactly: the "rooted subtree" behavior of ServeMux is not implemented. Secondly,
-unlike ServeMux, Mux does not support Host-specific patterns.
-
-If you require any of these features, remember that you are free to mix and
-match muxes at any part of the stack.
-
-In order to provide a sane API, many functions on Mux take interface{}'s. This
-is obviously not a very satisfying solution, but it's probably the best we can
-do for now. Instead of duplicating documentation on each method, the types
-accepted by those functions are documented here.
-
-A middleware (the untyped parameter in Use() and Insert()) must be one of the
-following types:
-	- func(http.Handler) http.Handler
-	- func(c *web.C, http.Handler) http.Handler
-
-All of the route-adding functions on Mux take two untyped parameters: pattern
-and handler. Pattern will be passed to ParsePattern, which takes a web.Pattern,
-a string, or a regular expression (more information can be found in the
-ParsePattern documentation). Handler must be one of the following types:
-	- http.Handler
-	- web.Handler
-	- func(w http.ResponseWriter, r *http.Request)
-	- func(c web.C, w http.ResponseWriter, r *http.Request)
+Routes may be added using any of the HTTP verb functions (Get, Post, etc.), or
+through the generic Handle function. Goji's routing algorithm is very simple:
+routes are processed in the order they are added, and the first matching route
+will be executed. Routes match if their HTTP method and Pattern both match.
 */
 type Mux struct {
 	ms mStack
@@ -59,7 +39,7 @@ func New() *Mux {
 	return &mux
 }
 
-// ServeHTTP processes HTTP requests. It make Muxes satisfy net/http.Handler.
+// ServeHTTP processes HTTP requests. Satisfies net/http.Handler.
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stack := m.ms.alloc()
 	stack.ServeHTTP(w, r)
@@ -67,7 +47,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // ServeHTTPC creates a context dependent request with the given Mux. Satisfies
-// the web.Handler interface.
+// the Handler interface.
 func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 	stack := m.ms.alloc()
 	stack.ServeHTTPC(c, w, r)
@@ -76,23 +56,21 @@ func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 
 // Middleware Stack functions
 
-// Append the given middleware to the middleware stack. See the documentation
-// for type Mux for a list of valid middleware types.
+// Append the given middleware to the middleware stack.
 //
 // No attempt is made to enforce the uniqueness of middlewares. It is illegal to
 // call this function concurrently with active requests.
-func (m *Mux) Use(middleware interface{}) {
+func (m *Mux) Use(middleware MiddlewareType) {
 	m.ms.Use(middleware)
 }
 
 // Insert the given middleware immediately before a given existing middleware in
-// the stack. See the documentation for type Mux for a list of valid middleware
-// types. Returns an error if no middleware has the name given by "before."
+// the stack. Returns an error if "before" cannot be found in the current stack.
 //
 // No attempt is made to enforce the uniqueness of middlewares. If the insertion
 // point is ambiguous, the first (outermost) one is chosen. It is illegal to
 // call this function concurrently with active requests.
-func (m *Mux) Insert(middleware, before interface{}) error {
+func (m *Mux) Insert(middleware, before MiddlewareType) error {
 	return m.ms.Insert(middleware, before)
 }
 
@@ -102,7 +80,7 @@ func (m *Mux) Insert(middleware, before interface{}) error {
 // If the name of the middleware to delete is ambiguous, the first (outermost)
 // one is chosen. It is illegal to call this function concurrently with active
 // requests.
-func (m *Mux) Abandon(middleware interface{}) error {
+func (m *Mux) Abandon(middleware MiddlewareType) error {
 	return m.ms.Abandon(middleware)
 }
 
@@ -110,96 +88,85 @@ func (m *Mux) Abandon(middleware interface{}) error {
 
 /*
 Dispatch to the given handler when the pattern matches, regardless of HTTP
-method. See the documentation for type Mux for a description of what types are
-accepted for pattern and handler.
+method.
 
 This method is commonly used to implement sub-routing: an admin application, for
 instance, can expose a single handler that is attached to the main Mux by
-calling Handle("/admin*", adminHandler) or similar. Note that this function
+calling Handle("/admin/*", adminHandler) or similar. Note that this function
 doesn't strip this prefix from the path before forwarding it on (e.g., the
-handler will see the full path, including the "/admin" part), but this
+handler will see the full path, including the "/admin/" part), but this
 functionality can easily be performed by an extra middleware layer.
 */
-func (m *Mux) Handle(pattern interface{}, handler interface{}) {
+func (m *Mux) Handle(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mALL, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// CONNECT. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (m *Mux) Connect(pattern interface{}, handler interface{}) {
+// CONNECT.
+func (m *Mux) Connect(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mCONNECT, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// DELETE. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (m *Mux) Delete(pattern interface{}, handler interface{}) {
+// DELETE.
+func (m *Mux) Delete(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mDELETE, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// GET. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
+// GET.
 //
 // All GET handlers also transparently serve HEAD requests, since net/http will
 // take care of all the fiddly bits for you. If you wish to provide an alternate
 // implementation of HEAD, you should add a handler explicitly and place it
 // above your GET handler.
-func (m *Mux) Get(pattern interface{}, handler interface{}) {
+func (m *Mux) Get(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mGET|mHEAD, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// HEAD. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (m *Mux) Head(pattern interface{}, handler interface{}) {
+// HEAD.
+func (m *Mux) Head(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mHEAD, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// OPTIONS. See the documentation for type Mux for a description of what types
-// are accepted for pattern and handler.
-func (m *Mux) Options(pattern interface{}, handler interface{}) {
+// OPTIONS.
+func (m *Mux) Options(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mOPTIONS, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// PATCH. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (m *Mux) Patch(pattern interface{}, handler interface{}) {
+// PATCH.
+func (m *Mux) Patch(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPATCH, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// POST. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (m *Mux) Post(pattern interface{}, handler interface{}) {
+// POST.
+func (m *Mux) Post(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPOST, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// PUT. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (m *Mux) Put(pattern interface{}, handler interface{}) {
+// PUT.
+func (m *Mux) Put(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPUT, handler)
 }
 
 // Dispatch to the given handler when the pattern matches and the HTTP method is
-// TRACE. See the documentation for type Mux for a description of what types are
-// accepted for pattern and handler.
-func (m *Mux) Trace(pattern interface{}, handler interface{}) {
+// TRACE.
+func (m *Mux) Trace(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mTRACE, handler)
 }
 
-// Set the fallback (i.e., 404) handler for this mux. See the documentation for
-// type Mux for a description of what types are accepted for handler.
+// Set the fallback (i.e., 404) handler for this mux.
 //
 // As a convenience, the context environment variable "goji.web.validMethods"
 // (also available as the constant ValidMethodsKey) will be set to the list of
 // HTTP methods that could have been routed had they been provided on an
 // otherwise identical request.
-func (m *Mux) NotFound(handler interface{}) {
+func (m *Mux) NotFound(handler HandlerType) {
 	m.rt.notFound = parseHandler(handler)
 }
 
