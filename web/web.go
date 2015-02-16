@@ -97,8 +97,8 @@ interface{} (that is named for the purposes of documentation), however only the
 following concrete types are accepted:
 	- types that implement http.Handler
 	- types that implement Handler
-	- func(w http.ResponseWriter, r *http.Request)
-	- func(c web.C, w http.ResponseWriter, r *http.Request)
+	- func(http.ResponseWriter, *http.Request)
+	- func(web.C, http.ResponseWriter, *http.Request)
 */
 type HandlerType interface{}
 
@@ -107,6 +107,6 @@ MiddlewareType is the type of Goji middleware. In order to provide an expressive
 API, this type is an alias for interface{} (that is named for the purposes of
 documentation), however only the following concrete types are accepted:
 	- func(http.Handler) http.Handler
-	- func(c *web.C, http.Handler) http.Handler
+	- func(*web.C, http.Handler) http.Handler
 */
 type MiddlewareType interface{}
