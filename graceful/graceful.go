@@ -9,6 +9,7 @@ package graceful
 
 import (
 	"net"
+	"runtime"
 	"sync/atomic"
 
 	"github.com/zenazn/goji/graceful/listener"
@@ -49,7 +50,11 @@ func peacefulError(err error) error {
 	// Unfortunately Go doesn't really give us a better way to select errors
 	// than this, so *shrug*.
 	if oe, ok := err.(*net.OpError); ok {
-		if oe.Op == "accept" && oe.Err.Error() == errClosing {
+		errOp := "accept"
+		if runtime.GOOS == "windows" {
+			errOp = "AcceptEx"
+		}
+		if oe.Op == errOp && oe.Err.Error() == errClosing {
 			return nil
 		}
 	}
