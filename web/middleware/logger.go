@@ -27,7 +27,7 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		reqID := GetReqID(*c)
 
-		printStart(reqID, r)
+		go func() { printStart(reqID, r) }()
 
 		lw := mutil.WrapWriter(w)
 
@@ -39,7 +39,7 @@ func Logger(c *web.C, h http.Handler) http.Handler {
 		}
 		t2 := time.Now()
 
-		printEnd(reqID, lw, t2.Sub(t1))
+		go func() { printEnd(reqID, lw, t2.Sub(t1)) }()
 	}
 
 	return http.HandlerFunc(fn)
