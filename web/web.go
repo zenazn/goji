@@ -41,8 +41,8 @@ type Handler interface {
 /*
 PatternType is the type denoting Patterns and types that Goji internally
 converts to Pattern (via the ParsePattern function). In order to provide an
-expressive API, this type is an alias for interface{} (that is named for the
-purposes of documentation), however only the following concrete types are
+expressive API, this type is an alias for interface{} that is named for the
+purposes of documentation, however only the following concrete types are
 accepted:
 	- types that implement Pattern
 	- string, which is interpreted as a Sinatra-like URL pattern. In
@@ -77,7 +77,7 @@ type PatternType interface{}
 /*
 HandlerType is the type of Handlers and types that Goji internally converts to
 Handler. In order to provide an expressive API, this type is an alias for
-interface{} (that is named for the purposes of documentation), however only the
+interface{} that is named for the purposes of documentation, however only the
 following concrete types are accepted:
 	- types that implement http.Handler
 	- types that implement Handler
@@ -88,8 +88,8 @@ type HandlerType interface{}
 
 /*
 MiddlewareType is the type of Goji middleware. In order to provide an expressive
-API, this type is an alias for interface{} (that is named for the purposes of
-documentation), however only the following concrete types are accepted:
+API, this type is an alias for interface{} that is named for the purposes of
+documentation, however only the following concrete types are accepted:
 	- func(http.Handler) http.Handler
 	- func(*web.C, http.Handler) http.Handler
 */
