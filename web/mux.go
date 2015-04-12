@@ -86,6 +86,31 @@ func (m *Mux) Abandon(middleware MiddlewareType) error {
 
 // Router functions
 
+type routerMiddleware struct {
+	m *Mux
+	c *C
+	h http.Handler
+}
+
+func (rm routerMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if rm.c.Env == nil {
+		rm.c.Env = make(map[interface{}]interface{}, 1)
+	}
+	rm.c.Env[MatchKey] = rm.m.rt.getMatch(rm.c, w, r)
+	rm.h.ServeHTTP(w, r)
+}
+
+// Router is a middleware that performs routing and stores the resulting Match
+// in Goji's environment. If a routing Match is present at the end of the
+// middleware stack, that Match is used instead of re-routing.
+//
+// This middleware is especially useful to create post-routing middleware, e.g.
+// a request logger which prints which pattern or handler was selected, or an
+// authentication middleware which only applies to certain routes.
+func (m *Mux) Router(c *C, h http.Handler) http.Handler {
+	return routerMiddleware{m, c, h}
+}
+
 /*
 Dispatch to the given handler when the pattern matches, regardless of HTTP
 method.

@@ -1,7 +1,6 @@
 package web
 
 import (
-	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -30,7 +29,7 @@ const (
 
 // The key used to communicate to the NotFound handler what methods would have
 // been allowed if they'd been provided.
-const ValidMethodsKey = "goji.web.validMethods"
+const ValidMethodsKey = "goji.web.ValidMethods"
 
 var validMethodsMap = map[string]method{
 	"CONNECT": mCONNECT,
@@ -58,32 +57,6 @@ type router struct {
 	machine  *routeMachine
 }
 
-type netHTTPWrap struct {
-	http.Handler
-}
-
-func (h netHTTPWrap) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
-	h.Handler.ServeHTTP(w, r)
-}
-
-const unknownHandler = `Unknown handler type %T. See http://godoc.org/github.com/zenazn/goji/web#HandlerType for a list of acceptable types.`
-
-func parseHandler(h interface{}) Handler {
-	switch f := h.(type) {
-	case Handler:
-		return f
-	case http.Handler:
-		return netHTTPWrap{f}
-	case func(c C, w http.ResponseWriter, r *http.Request):
-		return HandlerFunc(f)
-	case func(w http.ResponseWriter, r *http.Request):
-		return netHTTPWrap{http.HandlerFunc(f)}
-	default:
-		log.Fatalf(unknownHandler, h)
-		panic("log.Fatalf does not return")
-	}
-}
-
 func httpMethod(mname string) method {
 	if method, ok := validMethodsMap[mname]; ok {
 		return method
@@ -102,7 +75,7 @@ func (rt *router) compile() *routeMachine {
 	return &sm
 }
 
-func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
+func (rt *router) getMatch(c *C, w http.ResponseWriter, r *http.Request) Match {
 	rm := rt.getMachine()
 	if rm == nil {
 		rm = rt.compile()
@@ -110,13 +83,14 @@ func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
 
 	methods, route := rm.route(c, w, r)
 	if route != nil {
-		route.handler.ServeHTTPC(*c, w, r)
-		return
+		return Match{
+			Pattern: route.pattern,
+			Handler: route.handler,
+		}
 	}
 
 	if methods == 0 {
-		rt.notFound.ServeHTTPC(*c, w, r)
-		return
+		return Match{Handler: rt.notFound}
 	}
 
 	var methodsList = make([]string, 0)
@@ -134,10 +108,18 @@ func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
 	} else {
 		c.Env[ValidMethodsKey] = methodsList
 	}
-	rt.notFound.ServeHTTPC(*c, w, r)
+	return Match{Handler: rt.notFound}
 }
 
-func (rt *router) handleUntyped(p interface{}, m method, h interface{}) {
+func (rt *router) route(c *C, w http.ResponseWriter, r *http.Request) {
+	match := GetMatch(*c)
+	if match.Handler == nil {
+		match = rt.getMatch(c, w, r)
+	}
+	match.Handler.ServeHTTPC(*c, w, r)
+}
+
+func (rt *router) handleUntyped(p PatternType, m method, h HandlerType) {
 	rt.handle(ParsePattern(p), m, parseHandler(h))
 }
 
