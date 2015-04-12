@@ -8,10 +8,11 @@ import (
 
 // Most of the code here is lifted straight from net/http
 
-// Type Server is exactly the same as an http.Server, but provides more graceful
+// A Server is exactly the same as an http.Server, but provides more graceful
 // implementations of its methods.
 type Server http.Server
 
+// ListenAndServe behaves like the method on net/http.Server with the same name.
 func (srv *Server) ListenAndServe() error {
 	addr := srv.Addr
 	if addr == "" {
@@ -24,10 +25,11 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve(l)
 }
 
-// Unlike the method of the same name on http.Server, this function defaults to
-// enforcing TLS 1.0 or higher in order to address the POODLE vulnerability.
-// Users who wish to enable SSLv3 must do so by supplying a TLSConfig
-// explicitly.
+// ListenAndServeTLS behaves like the method on net/http.Server with the same
+// name. Unlike the method of the same name on http.Server, this function
+// defaults to enforcing TLS 1.0 or higher in order to address the POODLE
+// vulnerability. Users who wish to enable SSLv3 must do so by supplying a
+// TLSConfig explicitly.
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 	addr := srv.Addr
 	if addr == "" {

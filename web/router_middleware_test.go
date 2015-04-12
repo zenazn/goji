@@ -30,6 +30,6 @@ func TestRouterMiddleware(t *testing.T) {
 	w := httptest.NewRecorder()
 	m.ServeHTTP(w, r)
 	if v := <-ch; v != "a" {
-		t.Error("Routing was not frozen! %s", v)
+		t.Errorf("Routing was not frozen! %s", v)
 	}
 }

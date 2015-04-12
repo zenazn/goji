@@ -143,7 +143,7 @@ func (t *T) DrainAll() error {
 	return nil
 }
 
-var notManagedErr = errors.New("listener: passed net.Conn is not managed by this package")
+var errNotManaged = errors.New("listener: passed net.Conn is not managed by this package")
 
 // Disown causes a connection to no longer be tracked by the listener. The
 // passed connection must have been returned by a call to Accept from this
@@ -152,7 +152,7 @@ func Disown(c net.Conn) error {
 	if cn, ok := c.(*conn); ok {
 		return cn.disown()
 	}
-	return notManagedErr
+	return errNotManaged
 }
 
 // MarkIdle marks the given connection as being idle, and therefore eligible for
@@ -163,7 +163,7 @@ func MarkIdle(c net.Conn) error {
 		cn.markIdle()
 		return nil
 	}
-	return notManagedErr
+	return errNotManaged
 }
 
 // MarkInUse marks this connection as being in use, removing it from the set of
@@ -174,5 +174,5 @@ func MarkInUse(c net.Conn) error {
 		cn.markInUse()
 		return nil
 	}
-	return notManagedErr
+	return errNotManaged
 }
