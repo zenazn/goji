@@ -38,22 +38,6 @@ type Handler interface {
 	ServeHTTPC(C, http.ResponseWriter, *http.Request)
 }
 
-// HandlerFunc is similar to net/http's http.HandlerFunc, but supports a context
-// object. Implements both http.Handler and Handler.
-type HandlerFunc func(C, http.ResponseWriter, *http.Request)
-
-// ServeHTTP implements http.Handler, allowing HandlerFunc's to be used with
-// net/http and other compliant routers. When used in this way, the underlying
-// function will be passed an empty context.
-func (h HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h(C{}, w, r)
-}
-
-// ServeHTTPC implements Handler.
-func (h HandlerFunc) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
-	h(c, w, r)
-}
-
 /*
 PatternType is the type denoting Patterns and types that Goji internally
 converts to Pattern (via the ParsePattern function). In order to provide an
