@@ -88,7 +88,8 @@ var testHandlerTable = map[string]string{
 	"/a": "http fn",
 	"/b": "http handler",
 	"/c": "web fn",
-	"/d": "httpc",
+	"/d": "web handler",
+	"/e": "httpc",
 }
 
 func TestHandlerTypes(t *testing.T) {
@@ -105,7 +106,10 @@ func TestHandlerTypes(t *testing.T) {
 	m.Get("/c", func(c C, w http.ResponseWriter, r *http.Request) {
 		ch <- "web fn"
 	})
-	m.Get("/d", testHandler(ch))
+	m.Get("/d", HandlerFunc(func(c C, w http.ResponseWriter, r *http.Request) {
+		ch <- "web handler"
+	}))
+	m.Get("/e", testHandler(ch))
 
 	for route, response := range testHandlerTable {
 		r, _ := http.NewRequest("GET", route, nil)
