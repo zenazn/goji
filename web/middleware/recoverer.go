@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net/http"
+	"os"
 	"runtime/debug"
 
 	"github.com/zenazn/goji/web"
@@ -21,7 +22,7 @@ func Recoverer(c *web.C, h http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				printPanic(reqID, err)
-				debug.PrintStack()
+				printStack(debug.Stack())
 				http.Error(w, http.StatusText(500), 500)
 			}
 		}()
@@ -41,4 +42,12 @@ func printPanic(reqID string, err interface{}) {
 	cW(&buf, bRed, "panic: %+v", err)
 
 	log.Print(buf.String())
+}
+
+func printStack(stack []byte) {
+	// skip callers on stack
+	split := bytes.Split(stack, []byte{0x0a})
+	stack = bytes.Join(split[6:], []byte{0x0a})
+
+	os.Stderr.Write(stack)
 }
