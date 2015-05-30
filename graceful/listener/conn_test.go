@@ -90,6 +90,22 @@ func TestCloseConn(t *testing.T) {
 	}
 }
 
+// Regression test for issue #130.
+func TestDisownedClose(t *testing.T) {
+	t.Parallel()
+	_, c, wc := singleConn(t, Deadline)
+
+	if err := Disown(wc); err != nil {
+		t.Fatalf("unexpected error disowning conn: %v", err)
+	}
+	if err := wc.Close(); err != nil {
+		t.Errorf("error closing connection: %v", err)
+	}
+	if !c.Closed() {
+		t.Errorf("connection didn't get closed")
+	}
+}
+
 func TestManualReadDeadline(t *testing.T) {
 	t.Parallel()
 	l, c, wc := singleConn(t, Manual)

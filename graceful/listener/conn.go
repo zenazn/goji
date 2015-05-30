@@ -65,7 +65,9 @@ func (c *conn) Close() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.closed || c.disowned {
+	if c.disowned {
+		return c.Conn.Close()
+	} else if c.closed {
 		return errClosing
 	}
 
