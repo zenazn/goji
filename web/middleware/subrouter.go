@@ -19,9 +19,23 @@ func (s subrouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if ok {
 			oldpath := r.URL.Path
+			oldmatch := web.GetMatch(*s.c)
 			r.URL.Path = path
+			if oldmatch.Handler != nil {
+				delete(s.c.Env, web.MatchKey)
+			}
+
 			defer func() {
 				r.URL.Path = oldpath
+
+				if s.c.Env == nil {
+					return
+				}
+				if oldmatch.Handler != nil {
+					s.c.Env[web.MatchKey] = oldmatch
+				} else {
+					delete(s.c.Env, web.MatchKey)
+				}
 			}()
 		}
 	}
