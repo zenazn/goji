@@ -101,13 +101,21 @@ func (rm routerMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rm.h.ServeHTTP(w, r)
 }
 
-// Router is a middleware that performs routing and stores the resulting Match
-// in Goji's environment. If a routing Match is present at the end of the
-// middleware stack, that Match is used instead of re-routing.
-//
-// This middleware is especially useful to create post-routing middleware, e.g.
-// a request logger which prints which pattern or handler was selected, or an
-// authentication middleware which only applies to certain routes.
+/*
+Router is a middleware that performs routing and stores the resulting Match in
+Goji's environment. If a routing Match is present at the end of the middleware
+stack, that Match is used instead of re-routing.
+
+This middleware is especially useful to create post-routing middleware, e.g. a
+request logger which prints which pattern or handler was selected, or an
+authentication middleware which only applies to certain routes.
+
+If you use nested Muxes with explicit routing, you should be aware that the
+explicit routing information set by an outer Mux can be picked up by an inner
+Mux, inadvertently causing an infinite routing loop. If you use both explicit
+routing and nested Muxes, you should be sure to unset MatchKey before the inner
+Mux performs routing (or attach a Router to the inner Mux as well).
+*/
 func (m *Mux) Router(c *C, h http.Handler) http.Handler {
 	return routerMiddleware{m, c, h}
 }
