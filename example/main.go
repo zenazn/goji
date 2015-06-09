@@ -90,7 +90,7 @@ func Root(w http.ResponseWriter, r *http.Request) {
 // you to the created greet.
 //
 // To post a new greet, try this at a shell:
-// $ now=$(date +'%Y-%m-%mT%H:%M:%SZ')
+// $ now=$(date +'%Y-%m-%dT%H:%M:%SZ')
 // $ curl -i -d "user=carl&message=Hello+World&time=$now" localhost:8000/greets
 func NewGreet(w http.ResponseWriter, r *http.Request) {
 	var greet Greet
