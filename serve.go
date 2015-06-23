@@ -3,8 +3,10 @@
 package goji
 
 import (
+	"crypto/tls"
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -22,6 +24,16 @@ func init() {
 
 // Serve starts Goji using reasonable defaults.
 func Serve() {
+	ServeListener(bind.Default())
+}
+
+// Like Serve, but enables TLS using the given config.
+func ServeTLS(config *tls.Config) {
+	ServeListener(tls.NewListener(bind.Default(), config))
+}
+
+// Like Serve, but runs Goji on top of an arbitrary net.Listener.
+func ServeListener(listener net.Listener) {
 	if !flag.Parsed() {
 		flag.Parse()
 	}
@@ -31,7 +43,6 @@ func Serve() {
 	// This allows packages like expvar to continue working as expected.
 	http.Handle("/", DefaultMux)
 
-	listener := bind.Default()
 	log.Println("Starting Goji on", listener.Addr())
 
 	graceful.HandleSignals()
