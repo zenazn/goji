@@ -24,20 +24,24 @@ func init() {
 
 // Serve starts Goji using reasonable defaults.
 func Serve() {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
 	ServeListener(bind.Default())
 }
 
 // Like Serve, but enables TLS using the given config.
 func ServeTLS(config *tls.Config) {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
 	ServeListener(tls.NewListener(bind.Default(), config))
 }
 
 // Like Serve, but runs Goji on top of an arbitrary net.Listener.
 func ServeListener(listener net.Listener) {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
-
 	DefaultMux.Compile()
 	// Install our handler at the root of the standard net/http default mux.
 	// This allows packages like expvar to continue working as expected.
