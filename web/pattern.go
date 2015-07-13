@@ -12,6 +12,10 @@ import (
 //
 // Built-in implementations of this interface are used to implement regular
 // expression and string matching.
+//
+// Inside of a handler, you can get the handler's Pattern like this:
+//         c.Env[web.MatchKey].(web.Match).Pattern
+// Where c has the type C.
 type Pattern interface {
 	// In practice, most real-world routes have a string prefix that can be
 	// used to quickly determine if a pattern is an eligible match. The
@@ -29,6 +33,10 @@ type Pattern interface {
 	// Run the pattern on the request and context, modifying the context as
 	// necessary to bind URL parameters or other parsed state.
 	Run(r *http.Request, c *C)
+	// String returns a string representation of Pattern that should be
+	// recognizable to the user. For example, for string-based Patterns,
+	// String will return the raw string that the user supplied.
+	String() string
 }
 
 const unknownPattern = `Unknown pattern type %T. See http://godoc.org/github.com/zenazn/goji/web#PatternType for a list of acceptable types.`

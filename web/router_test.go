@@ -63,6 +63,10 @@ func (t testPattern) Match(r *http.Request, c *C) bool {
 func (t testPattern) Run(r *http.Request, c *C) {
 }
 
+func (t testPattern) String() string {
+	return ""
+}
+
 var _ Pattern = testPattern{}
 
 func TestPatternTypes(t *testing.T) {
@@ -177,6 +181,10 @@ func (rs rsPattern) Run(_ *http.Request, _ *C) {
 
 func (rs rsPattern) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {
 	rs.ichan <- rs.i
+}
+
+func (rs rsPattern) String() string {
+	return ""
 }
 
 var _ Pattern = rsPattern{}
