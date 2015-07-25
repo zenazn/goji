@@ -63,7 +63,7 @@ accepted:
 	- types that implement Pattern
 	- string, which is interpreted as a Sinatra-like URL pattern. In
 	  particular, the following syntax is recognized:
-		- a path segment starting with with a colon will match any
+		- a path segment starting with a colon will match any
 		  string placed at that position. e.g., "/:name" will match
 		  "/carl", binding "name" to "carl".
 		- a pattern ending with "/*" will match any route with that
