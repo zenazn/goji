@@ -4,9 +4,28 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"time"
 )
 
 // Most of the code here is lifted straight from net/http
+
+// tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
+// connections. It's used by ListenAndServe and ListenAndServeTLS so
+// dead TCP connections (e.g. closing laptop mid-download) eventually
+// go away.
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
+}
 
 // A Server is exactly the same as an http.Server, but provides more graceful
 // implementations of its methods.
@@ -18,11 +37,11 @@ func (srv *Server) ListenAndServe() error {
 	if addr == "" {
 		addr = ":http"
 	}
-	l, e := net.Listen("tcp", addr)
-	if e != nil {
-		return e
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
 	}
-	return srv.Serve(l)
+	return srv.Serve(tcpKeepAliveListener{ln.(*net.TCPListener)})
 }
 
 // ListenAndServeTLS behaves like the method on net/http.Server with the same
@@ -52,12 +71,12 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 		return err
 	}
 
-	conn, err := net.Listen("tcp", addr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 
-	tlsListener := tls.NewListener(conn, config)
+	tlsListener := tls.NewListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, config)
 	return srv.Serve(tlsListener)
 }
 
