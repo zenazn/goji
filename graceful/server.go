@@ -96,8 +96,13 @@ func ListenAndServeTLS(addr, certfile, keyfile string, handler http.Handler) err
 	return server.ListenAndServeTLS(certfile, keyfile)
 }
 
-// Serve behaves exactly like the net/http function of the same name.
+// Serve mostly behaves like the net/http function of the same name, except that
+// if the passed listener is a net.TCPListener, TCP keep-alives are enabled on
+// accepted connections.
 func Serve(l net.Listener, handler http.Handler) error {
+	if tl, ok := l.(*net.TCPListener); ok {
+		l = tcpKeepAliveListener{tl}
+	}
 	server := &Server{Handler: handler}
 	return server.Serve(l)
 }
