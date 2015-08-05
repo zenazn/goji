@@ -8,6 +8,7 @@ import (
 )
 
 type autoOptionsState int
+type autoOptionsMode int // 0 - web mode, 1 - RESTful API mode
 
 const (
 	aosInit autoOptionsState = iota
@@ -20,9 +21,11 @@ const (
 // ResponseRecorder that has been specialized for the purpose at hand to avoid
 // the httptest dependency.
 type autoOptionsProxy struct {
-	w     http.ResponseWriter
-	c     *web.C
-	state autoOptionsState
+	w      http.ResponseWriter
+	c      *web.C
+	state  autoOptionsState
+	mode   autoOptionsMode
+	method string
 }
 
 func (p *autoOptionsProxy) Header() http.Header {
@@ -56,7 +59,12 @@ func (p *autoOptionsProxy) WriteHeader(code int) {
 
 	methods = addMethod(methods, "OPTIONS")
 	p.w.Header().Set("Allow", strings.Join(methods, ", "))
-	p.w.WriteHeader(http.StatusOK)
+
+	if p.mode == 0 || p.method == "OPTIONS" {
+		p.w.WriteHeader(http.StatusOK)
+	} else if p.mode == 1 {
+		p.w.WriteHeader(http.StatusMethodNotAllowed)
+	}
 }
 
 // AutomaticOptions automatically return an appropriate "Allow" header when the
@@ -64,8 +72,21 @@ func (p *autoOptionsProxy) WriteHeader(code int) {
 func AutomaticOptions(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "OPTIONS" {
-			w = &autoOptionsProxy{c: c, w: w}
+			w = &autoOptionsProxy{c: c, w: w, mode: 0} // web autoOptionsMode
 		}
+
+		h.ServeHTTP(w, r)
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+// RESTAutomaticOptions automatically return an appropriate "Allow" header when the
+// request method is OPTIONS and if request method is not implemented/not supported.
+// Infavour of RESTful
+func RESTAutomaticOptions(c *web.C, h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w = &autoOptionsProxy{c: c, w: w, mode: 1, method: r.Method} // REST autoOptionsMode
 
 		h.ServeHTTP(w, r)
 	}
