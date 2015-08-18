@@ -1,8 +1,6 @@
 package web
 
-import (
-	"net/http"
-)
+import "net/http"
 
 /*
 Mux is an HTTP multiplexer, much like net/http's ServeMux. It functions as both
@@ -56,12 +54,14 @@ func (m *Mux) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 
 // Middleware Stack functions
 
-// Use appends the given middleware to the middleware stack.
+// Use appends the given middleware(s) to the middleware stack.
 //
 // No attempt is made to enforce the uniqueness of middlewares. It is illegal to
 // call this function concurrently with active requests.
-func (m *Mux) Use(middleware MiddlewareType) {
-	m.ms.Use(middleware)
+func (m *Mux) Use(middlewares ...MiddlewareType) {
+	for _, h := range middlewares {
+		m.ms.Use(h)
+	}
 }
 
 // Insert inserts the given middleware immediately before a given existing

@@ -11,16 +11,13 @@ var DefaultMux *web.Mux
 func init() {
 	DefaultMux = web.New()
 
-	DefaultMux.Use(middleware.RequestID)
-	DefaultMux.Use(middleware.Logger)
-	DefaultMux.Use(middleware.Recoverer)
-	DefaultMux.Use(middleware.AutomaticOptions)
+	DefaultMux.Use(middleware.RequestID, middleware.Logger, middleware.Recoverer, middleware.AutomaticOptions)
 }
 
 // Use appends the given middleware to the default Mux's middleware stack. See
 // the documentation for web.Mux.Use for more information.
-func Use(middleware web.MiddlewareType) {
-	DefaultMux.Use(middleware)
+func Use(middlewares ...web.MiddlewareType) {
+	DefaultMux.Use(middlewares...)
 }
 
 // Insert the given middleware into the default Mux's middleware stack. See the
