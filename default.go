@@ -35,6 +35,12 @@ func Abandon(middleware web.MiddlewareType) error {
 	return DefaultMux.Abandon(middleware)
 }
 
+// Replace replaces existing middleware with given new middleware in the default Mux's middleware stack.
+// See the documentation for web.Mux.Replace for more information.
+func Replace(existing, newone web.MiddlewareType) error {
+	return DefaultMux.Replace(existing, newone)
+}
+
 // Handle adds a route to the default Mux. See the documentation for web.Mux for
 // more information about what types this function accepts.
 func Handle(pattern web.PatternType, handler web.HandlerType) {

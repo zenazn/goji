@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -52,19 +53,14 @@ func (s *cStack) ServeHTTPC(c C, w http.ResponseWriter, r *http.Request) {
 
 const unknownMiddleware = `Unknown middleware type %T. See http://godoc.org/github.com/zenazn/goji/web#MiddlewareType for a list of acceptable types.`
 
-func (m *mStack) appendLayer(fn interface{}) {
-	ml := mLayer{orig: fn}
-	switch f := fn.(type) {
-	case func(http.Handler) http.Handler:
-		ml.fn = func(c *C, h http.Handler) http.Handler {
-			return f(h)
-		}
-	case func(*C, http.Handler) http.Handler:
-		ml.fn = f
-	default:
-		log.Fatalf(unknownMiddleware, fn)
+func (m *mStack) appendLayer(fn interface{}) error {
+	ml, err := getMLayer(fn)
+	if err != nil {
+		return err
 	}
-	m.stack = append(m.stack, ml)
+
+	m.stack = append(m.stack, *ml)
+	return nil
 }
 
 func (m *mStack) findLayer(l interface{}) int {
@@ -151,4 +147,41 @@ func (m *mStack) Abandon(middleware interface{}) error {
 
 	m.invalidate()
 	return nil
+}
+
+func (m *mStack) Replace(existing, newone interface{}) error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	i := m.findLayer(existing)
+	if i < 0 {
+		return fmt.Errorf("web: unknown middleware %v", existing)
+	}
+
+	ml, err := getMLayer(newone)
+	if err != nil {
+		return err
+	}
+
+	m.stack[i] = *ml
+
+	m.invalidate()
+	return nil
+}
+
+func getMLayer(fn interface{}) (*mLayer, error) {
+	ml := &mLayer{orig: fn}
+
+	switch f := fn.(type) {
+	case func(http.Handler) http.Handler:
+		ml.fn = func(c *C, h http.Handler) http.Handler {
+			return f(h)
+		}
+	case func(*C, http.Handler) http.Handler:
+		ml.fn = f
+	default:
+		log.Fatalf(unknownMiddleware, fn)
+		return nil, errors.New(unknownMiddleware)
+	}
+
+	return ml, nil
 }

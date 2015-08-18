@@ -163,6 +163,40 @@ func TestAbandon(t *testing.T) {
 	assertOrder(t, ch, "one", "router", "end")
 }
 
+func TestReplace(t *testing.T) {
+	t.Parallel()
+
+	ch := make(chan string)
+	st := makeStack(ch)
+	one := chanWare(ch, "one")
+	replaceme := chanWare(ch, "replace-me carl")
+	three := chanWare(ch, "three")
+	st.Use(one)
+	st.Use(replaceme)
+	st.Use(three)
+	go simpleRequest(ch, st)
+	assertOrder(t, ch, "one", "replace-me carl", "three", "router", "end")
+
+	st.Replace(replaceme, chanWare(ch, "thanks carl"))
+	go simpleRequest(ch, st)
+	assertOrder(t, ch, "one", "thanks carl", "three", "router", "end")
+
+	err := st.Replace(chanWare(ch, "I'm here"), chanWare(ch, "not here"))
+	if err == nil {
+		t.Error("Expected error when replacing unknown middleware in the stack")
+	}
+
+	st.Abandon(one)
+	st.Abandon(three)
+	go simpleRequest(ch, st)
+	assertOrder(t, ch, "thanks carl", "router", "end")
+
+	st.Use(chanWare(ch, "for new"))
+	st.Use(chanWare(ch, "replace method"))
+	go simpleRequest(ch, st)
+	assertOrder(t, ch, "thanks carl", "for new", "replace method", "router", "end")
+}
+
 func TestContext(t *testing.T) {
 	router := func(c *C, w http.ResponseWriter, r *http.Request) {
 		if c.Env["reqID"].(int) != 2 {
