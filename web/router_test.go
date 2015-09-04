@@ -35,7 +35,6 @@ func TestMethods(t *testing.T) {
 	m.Put("/", chHandler(ch, "PUT"))
 	m.Trace("/", chHandler(ch, "TRACE"))
 	m.Handle("/", chHandler(ch, "OTHER"))
-	m.Get("/somethingelse", chHandler(ch, "GET")) // For later
 
 	for _, method := range methods {
 		r, _ := http.NewRequest(method, "/", nil)
@@ -50,6 +49,24 @@ func TestMethods(t *testing.T) {
 			t.Errorf("Timeout waiting for method %q", method)
 		}
 	}
+}
+
+func TestUnmethods(t *testing.T) {
+	t.Parallel()
+	m := New()
+	ch := make(chan string, 1)
+
+	m.Connect("/", chHandler(ch, "CONNECT"))
+	m.Delete("/", chHandler(ch, "DELETE"))
+	m.Head("/", chHandler(ch, "HEAD"))
+	m.Get("/", chHandler(ch, "GET"))
+	m.Options("/", chHandler(ch, "OPTIONS"))
+	m.Patch("/", chHandler(ch, "PATCH"))
+	m.Post("/", chHandler(ch, "POST"))
+	m.Put("/", chHandler(ch, "PUT"))
+	m.Trace("/", chHandler(ch, "TRACE"))
+	m.Handle("/", chHandler(ch, "OTHER"))
+	m.Get("/somethingelse", chHandler(ch, "GET")) // For later
 
 	// Test the rolldown after Unhandle as well
 	m.Unhandle("/")
