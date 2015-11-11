@@ -48,6 +48,10 @@ func (p regexpPattern) String() string {
 	return fmt.Sprintf("regexpPattern(%v)", p.re)
 }
 
+func (p regexpPattern) Raw() *regexp.Regexp {
+	return p.re
+}
+
 /*
 I'm sorry, dear reader. I really am.
 

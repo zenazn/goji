@@ -90,6 +90,10 @@ func (s stringPattern) String() string {
 	return fmt.Sprintf("stringPattern(%q)", s.raw)
 }
 
+func (s stringPattern) Raw() string {
+	return s.raw
+}
+
 // "Break characters" are characters that can end patterns. They are not allowed
 // to appear in pattern names. "/" was chosen because it is the standard path
 // separator, and "." was chosen because it often delimits file extensions. ";"
