@@ -23,4 +23,4 @@ matrix:
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
       - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
 script:
-  - go test -v ./... -cover
+  - go test -cover ./...
