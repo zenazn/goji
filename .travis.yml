@@ -17,6 +17,11 @@ matrix:
       - go get golang.org/x/tools/cmd/cover
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
       - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    - go: 1.5
+      install:
+      - go get golang.org/x/tools/cmd/cover
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
     - go: tip
       install:
       - go get golang.org/x/tools/cmd/cover
