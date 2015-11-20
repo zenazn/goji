@@ -39,6 +39,9 @@ func WrapWriter(w http.ResponseWriter) WriterProxy {
 	if cn && fl && hj && rf {
 		return &fancyWriter{bw}
 	}
+	if fl {
+		return &flushWriter{bw}
+	}
 	return &bw
 }
 
@@ -123,3 +126,14 @@ var _ http.CloseNotifier = &fancyWriter{}
 var _ http.Flusher = &fancyWriter{}
 var _ http.Hijacker = &fancyWriter{}
 var _ io.ReaderFrom = &fancyWriter{}
+
+type flushWriter struct {
+	basicWriter
+}
+
+func (f *flushWriter) Flush() {
+	fl := f.basicWriter.ResponseWriter.(http.Flusher)
+	fl.Flush()
+}
+
+var _ http.Flusher = &flushWriter{}
