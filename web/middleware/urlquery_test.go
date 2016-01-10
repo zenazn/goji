@@ -10,20 +10,20 @@ import (
 	"github.com/zenazn/goji/web"
 )
 
-func testUrlQuery(r *http.Request, f func(*web.C, http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
+func testURLQuery(r *http.Request, f func(*web.C, http.ResponseWriter, *http.Request)) *httptest.ResponseRecorder {
 	var c web.C
 
 	h := func(w http.ResponseWriter, r *http.Request) {
 		f(&c, w, r)
 	}
-	m := UrlQuery(&c, http.HandlerFunc(h))
+	m := URLQuery(&c, http.HandlerFunc(h))
 	w := httptest.NewRecorder()
 	m.ServeHTTP(w, r)
 
 	return w
 }
 
-func TestUrlQuery(t *testing.T) {
+func TestURLQuery(t *testing.T) {
 	type testcase struct {
 		url            string
 		expectedParams url.Values
@@ -39,11 +39,11 @@ func TestUrlQuery(t *testing.T) {
 
 	for _, tc := range testcases {
 		r, _ := http.NewRequest("GET", tc.url, nil)
-		testUrlQuery(r,
+		testURLQuery(r,
 			func(c *web.C, w http.ResponseWriter, r *http.Request) {
-				params := c.Env[UrlQueryKey].(url.Values)
+				params := c.Env[URLQueryKey].(url.Values)
 				if !reflect.DeepEqual(params, tc.expectedParams) {
-					t.Errorf("GET %s, UrlQuery middleware found %v, should be %v", tc.url, params, tc.expectedParams)
+					t.Errorf("GET %s, URLQuery middleware found %v, should be %v", tc.url, params, tc.expectedParams)
 				}
 
 				w.Write([]byte{'h', 'i'})

@@ -5,17 +5,17 @@ import (
 	"net/http"
 )
 
-// UrlQueryKey is the context key for the URL Query
-const UrlQueryKey string = "urlquery"
+// URLQueryKey is the context key for the URL Query
+const URLQueryKey string = "urlquery"
 
-// UrlQuery is a middleware to parse the URL Query parameters just once,
+// URLQuery is a middleware to parse the URL Query parameters just once,
 // and store the resulting url.Values in the context.
-func UrlQuery(c *web.C, h http.Handler) http.Handler {
+func URLQuery(c *web.C, h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if c.Env == nil {
 			c.Env = make(map[interface{}]interface{})
 		}
-		c.Env[UrlQueryKey] = r.URL.Query()
+		c.Env[URLQueryKey] = r.URL.Query()
 
 		h.ServeHTTP(w, r)
 	}
