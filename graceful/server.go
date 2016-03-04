@@ -58,7 +58,7 @@ func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
 		MinVersion: tls.VersionTLS10,
 	}
 	if srv.TLSConfig != nil {
-		*config = *srv.TLSConfig
+		config = cloneTLSConfig(srv.TLSConfig)
 	}
 	if config.NextProtos == nil {
 		config.NextProtos = []string{"http/1.1"}
