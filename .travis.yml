@@ -21,6 +21,10 @@ matrix:
       install:
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
       - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    - go: 1.6
+      install:
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
     - go: tip
       install:
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
