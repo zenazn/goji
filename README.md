@@ -5,6 +5,15 @@ Goji
 
 Goji is a minimalistic web framework that values composability and simplicity.
 
+This project has been superseded by a [new version of Goji][goji2] by the same
+author, which has very similar primitives and semantics, but has been updated to
+reflect several years of experience with this library and the surrounding Go
+ecosystem. This project is still well-loved and well-maintained, and will be for
+the foreseeable future, but new projects are encouraged to use `goji.io`
+instead.
+
+[goji2]: https://goji.io
+
 Example
 -------
 
@@ -52,6 +61,17 @@ Features
 [bind]: http://godoc.org/github.com/zenazn/goji/bind
 [graceful]: http://godoc.org/github.com/zenazn/goji/graceful
 [pattern]: https://godoc.org/github.com/zenazn/goji/web#Pattern
+
+
+Stability
+---------
+
+Goji's API is essentially frozen, and guarantees to never break compatibility
+with existing code (under similar rules to the Go project's
+[guidelines][compat]). Goji is suitable for use in production, and has served
+billions of requests across several companies.
+
+[compat]: https://golang.org/doc/go1compat
 
 
 Is it any good?
