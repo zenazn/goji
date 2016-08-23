@@ -41,21 +41,31 @@ func init() {
 	systemdInit()
 }
 
-// WithFlag adds a standard flag to the global flag instance that allows
-// configuration of the default socket. Users who call Default() must call this
-// function before flags are parsed, for example in an init() block.
+// DefaultBind specifies the fallback used for WithFlag() if it is
+// unable to discover an environment hint (after checking $GOJI_BIND,
+// Einhorn, systemd, and $PORT).
 //
-// When selecting the default bind string, this function will examine its
-// environment for hints about what port to bind to, selecting the GOJI_BIND
-// environment variable, Einhorn, systemd, the PORT environment variable, and
-// the port 8000, in order. In most cases, this means that the default behavior
-// of the default socket will be reasonable for use in your circumstance.
+// If DefaultBind is overridden, it must be set before calling
+// WithFlag().
+var DefaultBind = ":8000"
+
+// WithFlag adds a standard flag to the global flag instance that
+// allows configuration of the default socket. Users who call
+// Default() must call this function before flags are parsed, for
+// example in an init() block.
+//
+// When selecting the default bind string, this function will examine
+// its environment for hints about what port to bind to, selecting the
+// GOJI_BIND environment variable, Einhorn, systemd, the PORT
+// environment variable, and the value of DefaultBind, in order. In
+// most cases, this means that the default behavior of the default
+// socket will be reasonable for use in your circumstance.
 func WithFlag() {
-	defaultBind := ":8000"
-	if s := Sniff(); s != "" {
-		defaultBind = s
+	s := Sniff()
+	if s == "" {
+		s = DefaultBind
 	}
-	flag.StringVar(&bind, "bind", defaultBind,
+	flag.StringVar(&bind, "bind", s,
 		`Address to bind on. If this value has a colon, as in ":8000" or
 		"127.0.0.1:9001", it will be treated as a TCP address. If it
 		begins with a "/" or a ".", it will be treated as a path to a
