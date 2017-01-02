@@ -135,16 +135,34 @@ func (m *Mux) Handle(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mALL, handler)
 }
 
+// Handle removes the handler when the pattern matches, regardless of
+// HTTP method.
+func (m *Mux) Unhandle(pattern PatternType) {
+	m.rt.unhandle(pattern, mALL)
+}
+
 // Connect dispatches to the given handler when the pattern matches and the HTTP
 // method is CONNECT.
 func (m *Mux) Connect(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mCONNECT, handler)
 }
 
+// Unconnect removes the handler when the pattern matches and the HTTP
+// method is CONNECT.
+func (m *Mux) Unconnect(pattern PatternType) {
+	m.rt.unhandle(pattern, mCONNECT)
+}
+
 // Delete dispatches to the given handler when the pattern matches and the HTTP
 // method is DELETE.
 func (m *Mux) Delete(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mDELETE, handler)
+}
+
+// Undelete removes the handler when the pattern matches and the HTTP
+// method is DELETE.
+func (m *Mux) Undelete(pattern PatternType) {
+	m.rt.unhandle(pattern, mDELETE)
 }
 
 // Get dispatches to the given handler when the pattern matches and the HTTP
@@ -158,10 +176,22 @@ func (m *Mux) Get(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mGET|mHEAD, handler)
 }
 
+// Unget removes the handler when the pattern matches and the HTTP
+// method is GET.
+func (m *Mux) Unget(pattern PatternType) {
+	m.rt.unhandle(pattern, mGET|mHEAD)
+}
+
 // Head dispatches to the given handler when the pattern matches and the HTTP
 // method is HEAD.
 func (m *Mux) Head(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mHEAD, handler)
+}
+
+// Unhead removes the handler when the pattern matches and the HTTP
+// method is HEAD.
+func (m *Mux) Unhead(pattern PatternType) {
+	m.rt.unhandle(pattern, mHEAD)
 }
 
 // Options dispatches to the given handler when the pattern matches and the HTTP
@@ -170,10 +200,22 @@ func (m *Mux) Options(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mOPTIONS, handler)
 }
 
+// Unoptions removes the handler when the pattern matches and the HTTP
+// method is OPTIONS.
+func (m *Mux) Unoptions(pattern PatternType) {
+	m.rt.unhandle(pattern, mOPTIONS)
+}
+
 // Patch dispatches to the given handler when the pattern matches and the HTTP
 // method is PATCH.
 func (m *Mux) Patch(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPATCH, handler)
+}
+
+// Unpatch removes the handler when the pattern matches and the HTTP
+// method is PATCH.
+func (m *Mux) Unpatch(pattern PatternType) {
+	m.rt.unhandle(pattern, mPATCH)
 }
 
 // Post dispatches to the given handler when the pattern matches and the HTTP
@@ -182,16 +224,34 @@ func (m *Mux) Post(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPOST, handler)
 }
 
+// Unpost removes the handler when the pattern matches and the HTTP
+// method is POST.
+func (m *Mux) Unpost(pattern PatternType) {
+	m.rt.unhandle(pattern, mPOST)
+}
+
 // Put dispatches to the given handler when the pattern matches and the HTTP
 // method is PUT.
 func (m *Mux) Put(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mPUT, handler)
 }
 
+// Unput removes the handler when the pattern matches and the HTTP
+// method is PUT.
+func (m *Mux) Unput(pattern PatternType) {
+	m.rt.unhandle(pattern, mPUT)
+}
+
 // Trace dispatches to the given handler when the pattern matches and the HTTP
 // method is TRACE.
 func (m *Mux) Trace(pattern PatternType, handler HandlerType) {
 	m.rt.handleUntyped(pattern, mTRACE, handler)
+}
+
+// Untrace removes the handler when the pattern matches and the HTTP
+// method is TRACE.
+func (m *Mux) Untrace(pattern PatternType) {
+	m.rt.unhandle(pattern, mTRACE)
 }
 
 // NotFound sets the fallback (i.e., 404) handler for this mux.

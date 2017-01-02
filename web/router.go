@@ -152,3 +152,27 @@ func (rt *router) handle(p Pattern, m method, h Handler) {
 	rt.setMachine(nil)
 	rt.routes = newRoutes
 }
+
+func (rt *router) unhandle(p PatternType, m method) {
+	pp := ParsePattern(p).Prefix()
+
+	rt.lock.Lock()
+	defer rt.lock.Unlock()
+
+	// Find the route we want to remove
+	for i := 0; i < len(rt.routes); i++ {
+		r := rt.routes[i]
+		if r.prefix <= pp && strings.HasPrefix(r.prefix, pp) && r.method&m != 0 {
+			// Found it
+			if i == len(rt.routes) {
+				// last element, so reslice up to it
+				rt.routes = rt.routes[:i]
+			} else if i >= 0 {
+				// use some append magic to create a pair of slices around the removed element
+				rt.routes = append(rt.routes[:i], rt.routes[i+1:]...)
+				i-- // decrement, so we don't overincrement
+			}
+		}
+	}
+	rt.setMachine(nil)
+}

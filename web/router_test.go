@@ -51,6 +51,56 @@ func TestMethods(t *testing.T) {
 	}
 }
 
+func TestUnmethods(t *testing.T) {
+	t.Parallel()
+	m := New()
+	ch := make(chan string, 1)
+
+	m.Connect("/", chHandler(ch, "CONNECT"))
+	m.Delete("/", chHandler(ch, "DELETE"))
+	m.Head("/", chHandler(ch, "HEAD"))
+	m.Get("/", chHandler(ch, "GET"))
+	m.Options("/", chHandler(ch, "OPTIONS"))
+	m.Patch("/", chHandler(ch, "PATCH"))
+	m.Post("/", chHandler(ch, "POST"))
+	m.Put("/", chHandler(ch, "PUT"))
+	m.Trace("/", chHandler(ch, "TRACE"))
+	m.Handle("/", chHandler(ch, "OTHER"))
+	m.Get("/somethingelse", chHandler(ch, "GET")) // For later
+
+	// Test the rolldown after Unhandle as well
+	m.Unhandle("/")
+
+	for _, method := range methods {
+		r, _ := http.NewRequest(method, "/", nil)
+		w := httptest.NewRecorder()
+		m.ServeHTTP(w, r)
+		select {
+		case val := <-ch:
+			t.Errorf("Got %q, expected nothing!", val)
+		case <-time.After(5 * time.Millisecond):
+			// No op, this is what we want
+		}
+	}
+
+	// Make sure /somethingelse is still around
+	{
+		method := "GET"
+		r, _ := http.NewRequest(method, "/somethingelse", nil)
+		w := httptest.NewRecorder()
+		m.ServeHTTP(w, r)
+		select {
+		case val := <-ch:
+			if val != method {
+				t.Errorf("Got %q, expected %q", val, method)
+			}
+		case <-time.After(5 * time.Millisecond):
+			t.Errorf("Timeout checking valid handle after unhandle. May be overzealous")
+		}
+	}
+
+}
+
 type testPattern struct{}
 
 func (t testPattern) Prefix() string {
