@@ -154,6 +154,34 @@ var patternTests = []struct {
 			}),
 			pt("/user/bob/enemies", false, nil),
 		}},
+
+	// Wildcard string prefix tests
+	{parseStringPattern("/admin/*"),
+		"/admin/", []patternTest{
+			pt("/admin", false, nil),
+			pt("/admin/", true, map[string]string{"*": "/"}),
+		}},
+	{parseStringPattern("/admin*"),
+		"/admin", []patternTest{
+			pt("/admin", true, map[string]string{"*": "/"}),
+			pt("/admin/", true, map[string]string{"*": "/"}),
+		}},
+	{parseStringPattern("/user/:user/friends*"),
+		"/user/", []patternTest{
+			pt("/user/bob/friends", true, map[string]string{
+				"user": "bob",
+				"*":    "/",
+			}),
+			pt("/user/bob/friends/", true, map[string]string{
+				"user": "bob",
+				"*":    "/",
+			}),
+			pt("/user/bob/friends/123", true, map[string]string{
+				"user": "bob",
+				"*":    "/123",
+			}),
+			pt("/user/bob/enemies", false, nil),
+		}},
 }
 
 func TestPatterns(t *testing.T) {
