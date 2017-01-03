@@ -57,7 +57,7 @@ func ServeListener(listener net.Listener) {
 	err := graceful.Serve(listener, http.DefaultServeMux)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	graceful.Wait()
