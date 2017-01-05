@@ -42,10 +42,10 @@ func realIP(r *http.Request) string {
 		if i == -1 {
 			i = len(xff)
 		}
-		ip = xff[:i]
+		return xff[:i]
 	} else if xrip := r.Header.Get(xRealIP); xrip != "" {
-		ip = xrip
+		return xrip
 	}
 
-	return ip
+	return strings.Split(r.RemoteAddr, ":")[0]
 }
