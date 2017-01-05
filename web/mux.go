@@ -85,6 +85,16 @@ func (m *Mux) Abandon(middleware MiddlewareType) error {
 	return m.ms.Abandon(middleware)
 }
 
+// Replace replaces existing middleware with given new middleware in the middleware stack.
+// Returns an error if no such middleware can be found.
+//
+// If the name of the middleware to delete is ambiguous, the first (outermost)
+// one is chosen. It is illegal to call this function concurrently with active
+// requests.
+func (m *Mux) Replace(existing, newone MiddlewareType) error {
+	return m.ms.Replace(existing, newone)
+}
+
 // Router functions
 
 type routerMiddleware struct {
