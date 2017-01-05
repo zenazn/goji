@@ -43,3 +43,17 @@ func TestIfItWorks(t *testing.T) {
 		t.Errorf(`Unexpected response %q, expected "Yo bob"`, out)
 	}
 }
+
+func TestMiddlewareOrderForNewUse(t *testing.T) {
+	t.Parallel()
+
+	m := New()
+	ch := make(chan string)
+
+	// Reusing couple of test methods from middleware_test.go
+	m.Use(chanWare(ch, "Hello carl"), chanWare(ch, ", this"), chanWare(ch, "is"),
+		chanWare(ch, "enhanced"), chanWare(ch, "Use"), chanWare(ch, "method."))
+
+	go simpleRequest(ch, &m.ms)
+	assertOrder(t, ch, "Hello carl", ", this", "is", "enhanced", "Use", "method.")
+}
