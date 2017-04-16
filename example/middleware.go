@@ -7,6 +7,15 @@ import (
 
 	"github.com/zenazn/goji/web"
 )
+//Inline MiddleWare example
+func InlineMiddleWare(h web.HandlerFunc) web.HandlerFunc {
+    return web.HandlerFunc(func(c web.C, w http.ResponseWriter, r *http.Request) {
+        
+        w.Write([]byte("Doing some fancy middleware operations - BEFORE \n"))
+        h.ServeHTTPC(c, w, r)
+        w.Write([]byte("Doing some fancy middleware operations - AFTER \n"))
+    })
+}
 
 // PlainText sets the content-type of responses to text/plain.
 func PlainText(h http.Handler) http.Handler {
