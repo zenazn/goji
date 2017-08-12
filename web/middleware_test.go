@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -201,4 +202,21 @@ func TestContext(t *testing.T) {
 	ch := make(chan string)
 	go simpleRequest(ch, &st)
 	assertOrder(t, ch, "end")
+}
+
+func TestMStackRace(t *testing.T) {
+	m := &mStack{pool: makeCPool()}
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			for j := 0; j < 1000; j++ {
+				m.release(m.alloc())
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
 }
