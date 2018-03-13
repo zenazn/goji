@@ -25,6 +25,23 @@ matrix:
       install:
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
       - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    - go: 1.7
+      install:
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    - go: 1.8
+      install:
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    - go: 1.9
+      install:
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
+    # Important: you must force a string, else YAML will coerce to "1.1", which is NOT the version you want.
+    - go: "1.10"
+      install:
+      - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
+      - go list -f '{{range .TestImports}}{{.}} {{end}}' ./... | xargs go get -v
     - go: tip
       install:
       - go list -f '{{range .Imports}}{{.}} {{end}}' ./... | xargs go get -v
