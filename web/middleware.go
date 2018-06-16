@@ -148,7 +148,7 @@ func (m *mStack) Abandon(middleware interface{}) error {
 	}
 
 	copy(m.stack[i:], m.stack[i+1:])
-	m.stack = m.stack[:len(m.stack)-1 : len(m.stack)]
+	m.stack = m.stack[: len(m.stack)-1 : len(m.stack)]
 
 	m.invalidate()
 	return nil
