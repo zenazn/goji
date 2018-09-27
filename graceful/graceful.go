@@ -9,7 +9,6 @@ package graceful
 
 import (
 	"net"
-	"runtime"
 	"sync/atomic"
 
 	"github.com/zenazn/goji/graceful/listener"
@@ -50,12 +49,16 @@ func peacefulError(err error) error {
 	// Unfortunately Go doesn't really give us a better way to select errors
 	// than this, so *shrug*.
 	if oe, ok := err.(*net.OpError); ok {
-		errOp := "accept"
-		if runtime.GOOS == "windows" {
-			errOp = "AcceptEx"
-		}
-		if oe.Op == errOp && oe.Err.Error() == errClosing {
-			return nil
+		switch oe.Op {
+		// backward compatibility: older golang returns AcceptEx on Windows.
+		// Current golang returns "accept" consistently. It's platform independent.
+		// See https://github.com/golang/go/commit/b0f4ee533a875c258ac1030ee382f0ffe2de304b
+		case "AcceptEx":
+			fallthrough
+		case "accept":
+			if oe.Err.Error() == errClosing {
+				return nil
+			}
 		}
 	}
 	return err
