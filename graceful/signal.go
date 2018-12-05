@@ -12,8 +12,8 @@ import (
 
 var mu sync.Mutex // protects everything that follows
 var listeners = make([]*listener.T, 0)
-var prehooks = make([]func(), 0)
-var posthooks = make([]func(), 0)
+var prehooks = make([]func(os.Signal), 0)
+var posthooks = make([]func(os.Signal), 0)
 var closing int32
 var doubleKick, timeout time.Duration
 
@@ -40,14 +40,41 @@ func ResetSignals() {
 	signal.Stop(sigchan)
 }
 
-// PreHook registers a function to be called before any of this package's normal
-// shutdown actions. All listeners will be called in the order they were added,
-// from a single goroutine.
-func PreHook(f func()) {
+// PreHookWithSignal registers a function to be called before any of this
+// package's normal shutdown actions, which recieves the signal that caused the
+// shutdown (or nil for manual shutdowns). All listeners will be called in the
+// order they were added, from a single goroutine.
+func PreHookWithSignal(f func(os.Signal)) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	prehooks = append(prehooks, f)
+}
+
+// PreHook registers a function to be called before any of this package's normal
+// shutdown actions. All listeners will be called in the order they were added,
+// from a single goroutine.
+func PreHook(f func()) {
+	PreHookWithSignal(func(_ os.Signal) {
+		f()
+	})
+}
+
+// PostHookWithSignal registers a function to be called after all of this
+// package's normal shutdown actions, which receives the signal that caused the
+// shutdown (or nil for manual shutdowns). All listeners will be called in the
+// order they were added, from a single goroutine, and are guaranteed to be
+// called after all listening connections have been closed, but before Wait()
+// returns.
+//
+// If you've Hijacked any connections that must be gracefully shut down in some
+// other way (since this library disowns all hijacked connections), it's
+// reasonable to use a PostHook to signal and wait for them.
+func PostHookWithSignal(f func(os.Signal)) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	posthooks = append(posthooks, f)
 }
 
 // PostHook registers a function to be called after all of this package's normal
@@ -59,23 +86,22 @@ func PreHook(f func()) {
 // other way (since this library disowns all hijacked connections), it's
 // reasonable to use a PostHook to signal and wait for them.
 func PostHook(f func()) {
-	mu.Lock()
-	defer mu.Unlock()
-
-	posthooks = append(posthooks, f)
+	PostHookWithSignal(func(_ os.Signal) {
+		f()
+	})
 }
 
 // Shutdown manually triggers a shutdown from your application. Like Wait,
 // blocks until all connections have gracefully shut down.
 func Shutdown() {
-	shutdown(false)
+	shutdown(false, nil)
 }
 
 // ShutdownNow triggers an immediate shutdown from your application. All
 // connections (not just those that are idle) are immediately closed, even if
 // they are in the middle of serving a request.
 func ShutdownNow() {
-	shutdown(true)
+	shutdown(true, nil)
 }
 
 // DoubleKickWindow sets the length of the window during which two back-to-back
@@ -123,30 +149,30 @@ func init() {
 func sigLoop() {
 	var last time.Time
 	for {
-		<-sigchan
+		sig := <-sigchan
 		now := time.Now()
 		mu.Lock()
 		force := doubleKick != 0 && now.Sub(last) < doubleKick
 		if t := timeout; t != 0 && !force {
 			go func() {
 				time.Sleep(t)
-				shutdown(true)
+				shutdown(true, sig)
 			}()
 		}
 		mu.Unlock()
-		go shutdown(force)
+		go shutdown(force, sig)
 		last = now
 	}
 }
 
 var preOnce, closeOnce, forceOnce, postOnce, notifyOnce sync.Once
 
-func shutdown(force bool) {
+func shutdown(force bool, sig os.Signal) {
 	preOnce.Do(func() {
 		mu.Lock()
 		defer mu.Unlock()
 		for _, f := range prehooks {
-			f()
+			f(sig)
 		}
 	})
 
@@ -164,7 +190,7 @@ func shutdown(force bool) {
 		mu.Lock()
 		defer mu.Unlock()
 		for _, f := range posthooks {
-			f()
+			f(sig)
 		}
 	})
 
