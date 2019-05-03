@@ -1,4 +1,4 @@
-// +build !go1.8
+// +build go1.8
 
 package mutil
 
@@ -32,17 +32,13 @@ type WriterProxy interface {
 // WrapWriter wraps an http.ResponseWriter, returning a proxy that allows you to
 // hook into various parts of the response process.
 func WrapWriter(w http.ResponseWriter) WriterProxy {
-	_, cn := w.(http.CloseNotifier)
 	_, fl := w.(http.Flusher)
 	_, hj := w.(http.Hijacker)
 	_, rf := w.(io.ReaderFrom)
 
 	bw := basicWriter{ResponseWriter: w}
-	if cn && fl && hj && rf {
+	if fl && hj && rf {
 		return &fancyWriter{bw}
-	}
-	if fl {
-		return &flushWriter{bw}
 	}
 	return &bw
 }
@@ -101,7 +97,7 @@ func (b *basicWriter) Unwrap() http.ResponseWriter {
 	return b.ResponseWriter
 }
 
-// fancyWriter is a writer that additionally satisfies http.CloseNotifier,
+// fancyWriter is a writer that additionally satisfies http.Pusher,
 // http.Flusher, http.Hijacker, and io.ReaderFrom. It exists for the common case
 // of wrapping the http.ResponseWriter that package http gives you, in order to
 // make the proxied object support the full method set of the proxied object.
@@ -109,9 +105,8 @@ type fancyWriter struct {
 	basicWriter
 }
 
-func (f *fancyWriter) CloseNotify() <-chan bool {
-	cn := f.basicWriter.ResponseWriter.(http.CloseNotifier)
-	return cn.CloseNotify()
+func (f *fancyWriter) Push(target string, opts *http.PushOptions) error {
+	return f.basicWriter.ResponseWriter.(http.Pusher).Push(target, opts)
 }
 
 func (f *fancyWriter) Flush() {
@@ -133,19 +128,9 @@ func (f *fancyWriter) ReadFrom(r io.Reader) (int64, error) {
 	return rf.ReadFrom(r)
 }
 
-type flushWriter struct {
-	basicWriter
-}
-
-func (f *flushWriter) Flush() {
-	fl := f.basicWriter.ResponseWriter.(http.Flusher)
-	fl.Flush()
-}
-
 var (
-	_ http.CloseNotifier = &fancyWriter{}
-	_ http.Flusher       = &fancyWriter{}
-	_ http.Hijacker      = &fancyWriter{}
-	_ io.ReaderFrom      = &fancyWriter{}
-	_ http.Flusher       = &flushWriter{}
+	_ http.Pusher   = &fancyWriter{}
+	_ http.Flusher  = &fancyWriter{}
+	_ http.Hijacker = &fancyWriter{}
+	_ io.ReaderFrom = &fancyWriter{}
 )
